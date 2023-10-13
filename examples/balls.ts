@@ -4,6 +4,7 @@ import { Circle } from '../src/circle.ts'
 import { Point } from '../src/point.ts'
 import { World } from '../src/world.ts'
 import { Scene } from '../src/scene.ts'
+import { Line } from '../src/line.ts'
 
 const p = $(new Point)
 
@@ -70,13 +71,14 @@ class Ball extends Circle {
   left = this.rect.$.left
   right = this.rect.$.right
   bottom = this.rect.$.bottom
+  lerpPos = $(new Line)
 }
 
 class BallScene extends Scene {
   gravity = $(new Gravity)
   motion = $(new Motion)
   walls = $(new Walls(this.canvas))
-  balls = array(500, () => $(new Ball, {
+  balls = array(250, () => $(new Ball, {
     pos: p.rand(this.canvas.size).sub({ x: 0, y: this.canvas.size.h / 2 }).xy,
     radius: 5 + (Math.random() ** 5) * 30,
     fillColor: '#' + randomHex()
@@ -133,17 +135,20 @@ class BallScene extends Scene {
       if (walls.update(ball)) return
       count++
     })
-    if (count) {
-      this.ballCollision()
-    }
+    // if (count) {
+    //   this.ballCollision()
+    // }
     return count
   }
 
-  @fn draw() {
+  @fn draw(t: number) {
     const { canvas, balls } = $.of(this)
     const { c } = canvas
     canvas.clear()
     balls.forEach(ball => {
+      ball.lerpPos.p2.x = ball.pos.x
+      ball.lerpPos.p2.y = ball.pos.y
+      ball.lerpPos.lerp(t)
       ball.fill(c)
     })
   }
@@ -166,35 +171,36 @@ function anim() {
   const scene = $(new BallScene)
 
   scene.canvas.appendTo(dom.body)
+  world.anim.items.push(scene)
+  world.anim.start()
+  // let animFrame: number
+  // const tick = () => {
+  //   if (!scene.update()) {
+  //     animFrame = -1
+  //     return
+  //   }
+  //   scene.draw()
+  //   animFrame = requestAnimationFrame(tick)
+  //   // console.log('anim')
+  // }
 
-  let animFrame: number
-  const tick = () => {
-    if (!scene.update()) {
-      animFrame = -1
-      return
-    }
-    scene.draw()
-    animFrame = requestAnimationFrame(tick)
-    // console.log('anim')
-  }
+  // fx(() => {
+  //   if (scene.canvas.size.sum && animFrame === -1) {
+  //     animFrame = requestAnimationFrame(tick)
+  //   }
+  // })
 
-  fx(() => {
-    if (scene.canvas.size.sum && animFrame === -1) {
-      animFrame = requestAnimationFrame(tick)
-    }
-  })
+  // tick()
 
-  tick()
-
-  on(window, 'mousedown', () => {
-    if (animFrame >= 0) {
-      cancelAnimationFrame(animFrame)
-      animFrame = -1
-    }
-    else {
-      requestAnimationFrame(tick)
-    }
-  })
+  // on(window, 'mousedown', () => {
+  //   if (animFrame >= 0) {
+  //     cancelAnimationFrame(animFrame)
+  //     animFrame = -1
+  //   }
+  //   else {
+  //     requestAnimationFrame(tick)
+  //   }
+  // })
 }
 
 function benchmark1() {

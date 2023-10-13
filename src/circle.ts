@@ -2,6 +2,7 @@ import { $, alias, fx } from 'signal'
 import { Rect } from './rect.ts'
 import { Point, PointLike } from './point.ts'
 import { Shape } from './shape.ts'
+import { Line } from './line.ts'
 
 const d = $(new Point)
 
@@ -32,6 +33,8 @@ export class Circle extends Shape {
   rect = $(new Rect)
   radius = 10
   pos = this.rect.$.center
+  prevPos = $(new Point)
+  lerpPos = $(new Line())
   center = alias(this, 'pos')
 
   @fx init() {
@@ -50,7 +53,7 @@ export class Circle extends Shape {
     return pos.distance(p) < radius
   }
   fill(c: CanvasRenderingContext2D): void {
-    const { fillColor: color, pos, radius } = this
+    const { fillColor: color, lerpPos: { lerpPoint: pos }, radius } = this
     c.beginPath()
     c.fillStyle = color
     c.arc(pos.x, pos.y, radius, 0, Math.PI * 2, true)

@@ -1,4 +1,4 @@
-import { $, alias } from 'signal'
+import { $, fn, alias, fx } from 'signal'
 import { Rect } from './rect.ts'
 import { Point, PointLike } from './point.ts'
 import { Shape } from './shape.ts'
@@ -20,6 +20,8 @@ export interface LineLike {
 export class Line extends Shape {
   p1 = $(new Point)
   p2 = $(new Point)
+  deltaPoint = $(new Point)
+  lerpPoint = $(new Point)
 
   get json() {
     const { p1, p2 } = this
@@ -64,6 +66,20 @@ export class Line extends Shape {
       p2.y - p1.y
     )
   }
+  @fn lerp(t: number) {
+    const { p1, p2, deltaPoint, lerpPoint } = this
+    lerpPoint.set(p2).add(deltaPoint.set(p2).sub(p1).mul(t))
+    return lerpPoint
+  }
+
+  @fx keepPrevPos() {
+    const { x, y } = this.p2
+    return () => {
+      this.p1.x = x
+      this.p1.y = y
+    }
+  }
+
   isPointWithin(p: PointLike) {
     const { start, end } = this
     return p.y === start.y

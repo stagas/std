@@ -1,11 +1,7 @@
 // log.active
 import { ProfileJson } from 'parse-trace'
-import { $ } from 'signal'
 import { dom, timeout } from 'utils'
-import { World } from '../src/world.ts'
-import { BallScene } from './ball-scene.ts'
-import { BoxScene } from './box-scene.ts'
-import { Box } from './box.ts'
+import { setup } from './entry.ts'
 
 const style = document.createElement('style')
 dom.head.append(style)
@@ -18,41 +14,6 @@ html, body {
   overflow: hidden;
 }
 `
-
-function start() {
-  const world = $(new World)
-  const ctx = { world }
-  const scene = $(new BallScene(ctx))
-  const boxs = $(new BoxScene(ctx))
-  for (let i = 0; i < 50; i++) {
-    boxs.boxes.push($(new Box(ctx)))
-  }
-  world.canvas = scene.renderable.canvas
-  world.canvas.appendTo(dom.body)
-  world.render.add(boxs)
-  world.render.add(scene)
-  // world.render.draw(1)
-  // world.render.draw(1)
-
-  world.anim.fps = 30
-  world.anim.speed = .2
-  world.anim.add(boxs)
-  world.anim.add(scene)
-  world.anim.add(world.render)
-  world.anim.start()
-
-  const stop = (e?: MouseEvent) => {
-    // if (e.buttons & MouseButtons.Right) {
-    e?.preventDefault()
-    world.anim.stop()
-    world.anim.remove(scene)
-    world.anim.remove(world.render)
-    // }
-  }
-  world.canvas.el.oncontextmenu = stop
-
-  return stop
-}
 
 // function benchmark1() {
 //   const scene = $(new BallScene)
@@ -72,6 +33,7 @@ function start() {
 //   })
 // }
 
+const start = setup()
 const stop = start()
 // benchmark1()
 

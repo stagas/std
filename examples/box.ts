@@ -1,5 +1,5 @@
 // log.active
-import { $, fn, of } from 'signal'
+import { $, fn, fx, of } from 'signal'
 import { randomHex } from 'utils'
 import { Animatable } from '../src/animatable.ts'
 import { Point } from '../src/point.ts'

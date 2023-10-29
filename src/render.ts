@@ -14,11 +14,11 @@ export class Render {
   @fn remove(it: Renderable.It) {
     maybeSplice(this.its, it)
   }
-  *renderables(its: Renderable.It[]): Generator<Renderable.It> {
+  *renderables(its: Renderable.It[]): Generator<Renderable.It & { renderable: Renderable }> {
     for (const it of its) {
       const { renderables: rs } = it
       if (rs) yield* this.renderables(rs)
-      yield it
+      if ('renderable' in it) yield it as any
     }
   }
   drawn: DirtyRect[] = []
@@ -64,9 +64,9 @@ export class Render {
         else r.need ^= Draw
       }
       for (const dr of r.dirtyRects) {
-      //  if (i === drawn.length) drawn.push(dr)
+        //  if (i === drawn.length) drawn.push(dr)
         //else
-      drawn[i] = dr
+        drawn[i] = dr
         i++
       }
     }

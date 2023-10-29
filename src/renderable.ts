@@ -21,7 +21,7 @@ export abstract class Renderable {
   viewRect?: $<Rect>
 
   // position
-  position = Renderable.Position.Layout
+  position = Renderable.Position.Fixed
 
   // state flags
   isVisible?: boolean
@@ -54,13 +54,13 @@ export abstract class Renderable {
 export namespace Renderable {
   export interface It extends Scene {
     renderables?: Renderable.It[]
-    renderable: Renderable
+    renderable?: Renderable
   }
   export enum Position {
-    /** Layout position, remains fixed in space without scroll translations. */
-    Layout,
-    /** Inner position, translations apply. */
-    Inner
+    /** Fixed in space, no transformations. */
+    Fixed,
+    /** Translations apply. */
+    Translated
   }
   export enum Need {
     Idle = 0,

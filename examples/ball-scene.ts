@@ -94,10 +94,11 @@ export class BallScene extends Scene {
   }
 
   @fx ballFollowsPointer() {
+    const { balls } = of(this)
     const { pos } = this.ctx.world.pointer
     const { x, y } = pos
     $()
-    const [ball] = $.of(this).balls
+    const [ball] = balls
     ball.vel.set(cv.set(pos).sub(ball.pos).mul(3))
     ball.pos.set(pos)
     // this.animatable.draw(1)
@@ -121,16 +122,20 @@ export class BallScene extends Scene {
   get renderable() {
     $()
     class BallsSceneRenderable extends Renderable {
-      dirtyRects = []
-      @init init_Balls() {
-        this.canvas.fullWindow = true
-      }
-      @fn init(c: CanvasRenderingContext2D) {
-        c.imageSmoothingEnabled = false
-        this.need ^= Renderable.Need.Init
-      }
+      // dirtyRects = []
+      // @init init_Balls() {
+      //   this.canvas.fullWindow = true
+      // }
+      // @fn init(c: CanvasRenderingContext2D) {
+      //   c.imageSmoothingEnabled = false
+      //   this.need ^= Renderable.Need.Init
+      // }
     }
-    return $(new BallsSceneRenderable(this.ctx))
+    return $(new BallsSceneRenderable(
+      this.ctx,
+      this.ctx.world.canvas!.rect,
+      this.ctx.world.canvas!
+    ))
   }
 
   get animatable() {

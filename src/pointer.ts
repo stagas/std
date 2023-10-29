@@ -1,9 +1,9 @@
 // log.active
-import { $, fn, fx } from 'signal'
-import { PointerLikeEvent, dom, on, validateType } from 'utils'
+import { $, fn, fx, of } from 'signal'
+import { PointerLikeEvent, dom, on } from 'utils'
+import { Anim } from './anim.ts'
 import { Point } from './point.ts'
 import { World } from './world.ts'
-import { Anim } from './anim.ts'
 
 export enum PointerEventType {
   Wheel,
@@ -62,7 +62,7 @@ export class Pointer {
   })
 
   get type(): PointerEventType {
-    return $.of(PointerEventTypeMap)[this.event.type]
+    return of(PointerEventTypeMap)[this.event.type]
   }
 
   time = this.event.$.timeStamp

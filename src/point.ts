@@ -34,6 +34,23 @@ export class Point extends Shape {
   }
   xy = alias(this, 'json')
 
+  get hw() { return this.w / 2 }
+  get hh() { return this.h / 2 }
+
+  get centerX() { return this.hw }
+  set centerX(x: number) { this.w = x * 2 }
+
+  get centerY() { return this.hh }
+  set centerY(y: number) { this.h = y * 2 }
+
+  cx = alias(this, 'centerX')
+  cy = alias(this, 'centerY')
+
+  get center() {
+    const { cx: x, cy: y } = $(this).$
+    return $(new Point, { x, y })
+  }
+
   get styleTransformTranslate() {
     const { x, y } = this
     return `translate(${x}px,${y}px)`

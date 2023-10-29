@@ -95,19 +95,27 @@ export class Anim {
   }
   @fn add(it: Animatable.It) {
     maybePush(this.its, it)
+    return this
   }
   @fn remove(it: Animatable.It) {
     maybeSplice(this.its, it)
+    return this
+  }
+  @fn removeAll() {
+    this.its.splice(0)
+    return this
   }
   @fn start() {
     const { state } = this
     if (state & (Anim.State.Animating | Anim.State.Starting)) return
     this.state = Anim.State.Starting
     this.tick()
+    return this
   }
   @fn stop() {
     this.state = Anim.State.Idle
     this.acc = 0
+    return this
   }
 
   // @fx print_isAnimating() {

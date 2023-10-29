@@ -35,18 +35,22 @@ export class BoxScene extends Scene {
     $()
     const it = this
     let phase = 0
+    const pi2 = Math.PI * 2
+    const { ctx: { world: { screen: { viewport }}}  }= it
     class BoxSceneAnimatable extends Animatable {
       need = Animatable.Need.Tick
-      @fn tick() {
-        // console.log('tick')
+      @fn tick(t: number) {
+        let i = 0
+        const { center } = viewport
+        for (const box of it.boxes) {
+          box.pos.set(center).angleShiftBy((i++ / it.boxes.length) * pi2 - phase, Math.cos(phase) * 400)
+        }
         return Animatable.Need.Tick
       }
       @fn tickOne(dt: number) {
-        // console.log('TICK ONE')
         phase += it.speed
-        phase %= Math.PI * 2
-        it.renderable.scroll.y = Math.sin(phase) * 100 - 100
-        it.renderable.scroll.x = Math.cos(phase) * 100 - 100
+        phase %= pi2
+        it.renderable.scroll.zero().angleShiftBy(phase, 100)
       }
     }
     return $(new BoxSceneAnimatable)

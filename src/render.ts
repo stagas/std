@@ -17,9 +17,11 @@ export class Render {
   its: Renderable.It[] = []
   @fn add(it: Renderable.It) {
     maybePush(this.its, it)
+    return this
   }
   @fn remove(it: Renderable.It) {
     maybeSplice(this.its, it)
+    return this
   }
   *renderables(its: Renderable.It[], c?: CanvasRenderingContext2D): Generator<Renderable.It & { renderable: Renderable }> {
     const { scroll } = this
@@ -32,6 +34,8 @@ export class Render {
           scroll.add(r.scroll).translate(c)
           if (rs) yield* this.renderables(rs, c)
           yield it as any
+          c.restore()
+          c.save()
           scroll.sub(r.scroll)
         }
         else {

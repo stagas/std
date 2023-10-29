@@ -40,8 +40,9 @@ export class Mouse extends Scene {
     }
   }
   @fx update_it_pointable_isHovering() {
-    const { hoverIt, ctx: { world } } = of(this)
+    const { hoverIt } = of(this)
     $()
+    const { ctx: { world } } = of(this)
     hoverIt.pointable.isHovering = true
     hoverIt.pointable.onMouseEvent?.(Enter)
     world.screen.cursor = hoverIt.pointable.cursor

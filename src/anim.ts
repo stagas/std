@@ -24,7 +24,7 @@ export class Anim {
   }
   @fn tick = () => {
     const { Need: { Init, Tick, Draw } } = Animatable
-    const { State: { Starting, NeedNextTick }} = Anim
+    const { State: { Starting, NeedNextTick } } = Anim
     const { its, timeStep, maxDeltaTime, tickTime, coeff } = this
     let { state, acc } = this
 
@@ -59,7 +59,7 @@ export class Anim {
           a.coeff = coeff
           res = a.tick?.(dt)!
           if (res & Animatable.Need.Tick) {
-            state |= res
+            state |= NeedNextTick
             a.tickOne(dt)
           }
         }
@@ -124,7 +124,7 @@ export class Anim {
 }
 
 export namespace Anim {
-  export enum State {
+  export const enum State {
     Idle = 0,
     Starting = 1 << 0,
     Stopping = 1 << 1,

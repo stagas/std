@@ -15,7 +15,7 @@ export namespace Animatable {
   export interface It {
     animatable: Animatable
   }
-  export enum Need {
+  export const enum Need {
     Idle = 0,
     Init = 1 << 0,
     Tick = 1 << 1,

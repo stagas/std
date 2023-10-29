@@ -52,7 +52,7 @@ export namespace Renderable {
     renderables?: Renderable.It[]
     renderable?: Renderable
   }
-  export enum Need {
+  export const enum Need {
     Idle = 0,
     Init = 1 << 0,
     Render = 1 << 1,

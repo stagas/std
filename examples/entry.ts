@@ -50,7 +50,7 @@ export async function test_balls() {
     jest.setTimeout(30000)
     it('balls', async () => {
       await timeout(3000)
-      await parseTrace(5)
+      await parseTrace(6)
     })
   })
 }

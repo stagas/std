@@ -1,54 +1,94 @@
 // log.active
-import { ProfileJson } from 'parse-trace'
-import { dom, timeout } from 'utils'
-import { setup } from './entry.ts'
+import { $, fn, init } from 'signal'
+import { dom } from 'utils'
+import { Pointable } from '../src/pointable.js'
+import { Renderable } from '../src/renderable.js'
+import { Scene } from '../src/scene.js'
+import { World } from '../src/world.js'
+import { BallScene } from './ball-scene.js'
+import { BoxScene } from './box-scene.js'
+import { Box } from './box.js'
 
-const style = document.createElement('style')
-dom.head.append(style)
-style.textContent = /*css*/`
-html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+class Balls extends Scene {
+  get balls() { return $(new BallScene(this.ctx)) }
+  get boxes1() { return $(new BoxScene(this.ctx)) }
+  get boxes2() { $(); return $(new BoxScene(this.ctx), { speed: 0.07 }) }
+  get renderables() {
+    return [
+      this.boxes1,
+      this.boxes2,
+      this.balls,
+    ]
+  }
+  get renderable() {
+    $()
+    class BallsRenderable extends Renderable {
+      @init init_Balls() {
+        this.canvas.fullWindow = true
+      }
+      @fn init(c: CanvasRenderingContext2D) {
+        c.imageSmoothingEnabled = false
+        this.need ^= Renderable.Need.Init
+      }
+    }
+    return $(new BallsRenderable(this.ctx))
+  }
+  get pointables() {
+    return [this.boxes1]
+  }
+  get pointable() {
+    $()
+    return $(new Pointable(this))
+  }
 }
-`
 
-// function benchmark1() {
-//   const scene = $(new BallScene)
+export function setup() {
+  return $.batch(() => {
+    const world = $(new World)
+    const ctx = { world }
 
-//   bench('scene', 5, 1000, () => {
-//     scene.update(1)
-//   }, () => {
-//     scene.reset()
-//   })
-// }
+    const balls = $(new Balls(ctx))
+    for (let i = 0; i < 20; i++) {
+      balls.boxes1.boxes.push($(new Box(ctx)))
+    }
+    for (let i = 0; i < 20; i++) {
+      balls.boxes2.boxes.push($(new Box(ctx)))
+    }
 
-// function benchmark2() {
-//   let scene
-//   bench('scene', 3, 30, () => {
-//     scene = $(new BallScene)
-//     $.dispose(scene)
-//   })
-// }
+    world.canvas = balls.renderable.canvas
+    world.canvas.appendTo(dom.body)
 
-const start = setup()
-const stop = start()
-// benchmark1()
+    world.it = balls
+    world.input
 
-declare function parseTrace(secs: number): Promise<ProfileJson>
-declare function readTextFile(filepath: string): Promise<string>
+    return function start() {
 
-// benchmark2()
-// 19
-export async function test_balls() {
-  // @env browser
-  describe('perf', () => {
-    jest.setTimeout(30000)
-    it('balls', async () => {
-      await timeout(3000)
-      await parseTrace(5)
-    })
+      world.render.add(balls)
+      // world.render.draw(1)
+      // world.render.draw(1)
+
+      world.anim.fps = 30
+      world.anim.speed = .2
+      // world.anim.add(scene)
+      world.anim.add(world.render)
+      world.anim.add(balls.balls)
+      world.anim.add(balls.boxes1)
+      world.anim.add(balls.boxes2)
+      world.anim.start()
+
+      const stop = (e?: MouseEvent) => {
+        // if (e.buttons & MouseButtons.Right) {
+        e?.preventDefault()
+        world.anim.stop()
+        world.anim.remove(balls.balls)
+        world.anim.remove(balls.boxes1)
+        world.anim.remove(balls.boxes2)
+        world.anim.remove(world.render)
+        // }
+      }
+      world.canvas!.el.oncontextmenu = stop
+      return stop
+    }
   })
 }
+

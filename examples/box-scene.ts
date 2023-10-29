@@ -10,6 +10,7 @@ import { Box } from './box.ts'
 
 export class BoxScene extends Scene {
   boxes: Box[] = []
+  speed = 0.04
 
   @nu get renderables(): Renderable.It[] {
     return of(this).boxes
@@ -42,7 +43,7 @@ export class BoxScene extends Scene {
       }
       @fn tickOne(dt: number) {
         // console.log('TICK ONE')
-        phase += 0.04
+        phase += it.speed
         phase %= Math.PI * 2
         it.renderable.scroll.y = Math.sin(phase) * 100 - 100
         it.renderable.scroll.x = Math.cos(phase) * 100 - 100

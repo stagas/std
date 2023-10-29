@@ -6,7 +6,7 @@ export class Screen {
   _viewport = $(new Point)
   get viewport() {
     const { _viewport } = this
-    $.untrack()
+    $()
     _viewport.w = window.innerWidth
     _viewport.h = window.innerHeight
     return _viewport
@@ -14,7 +14,7 @@ export class Screen {
   pr = unwrap(
     on(window, 'resize', { unsafeInitial: true }),
     () => {
-      $.untrack()
+      $()
       this.viewport.w = window.innerWidth
       this.viewport.h = window.innerHeight
       return window.devicePixelRatio

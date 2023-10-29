@@ -27,6 +27,8 @@ export class Render {
     const { drawn } = this
     const { canvas: { c }, screen: { pr } } = of(this.world)
 
+    // TODO: deal with position: Inner
+
     let i = 0
     for (const { renderable: r } of this.renderables(this.its)) {
       const dirty = r.dirtyRects
@@ -44,6 +46,9 @@ export class Render {
         }
         dr.zero()
       }
+      // TODO: The 'init' in r 'render' in r etc don't
+      // need to be in the hot loop and can be done
+      // at an earlier step.
       if (r.need & Init) {
         if ('init' in r) r.init(r.canvas.c)
         else r.need ^= Init
@@ -59,8 +64,9 @@ export class Render {
         else r.need ^= Draw
       }
       for (const dr of r.dirtyRects) {
-        if (i === drawn.length) drawn.push(dr)
-        else drawn[i] = dr
+      //  if (i === drawn.length) drawn.push(dr)
+        //else
+      drawn[i] = dr
         i++
       }
     }

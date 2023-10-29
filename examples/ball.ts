@@ -56,10 +56,9 @@ class BallRenderable extends Renderable {
     this.need ^= Render
   }
   @fn draw(c: CanvasRenderingContext2D, t: number) {
-    const { it, canvas, rect, pr, dirtyRects: [dr] } = of(this)
+    const { it, canvas, rect, pr } = of(this)
     it.circle.lerpPos.lerp(t)
     rect.center.set(it.circle.lerpPos.lerpPoint.round())
     rect.round().drawImage(canvas.el, c, pr, true)
-    dr.set(rect)
   }
 }

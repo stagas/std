@@ -13,12 +13,14 @@ class Balls extends Scene {
   get balls() { return $(new BallScene(this.ctx)) }
   get boxes() { return $(new BoxScene(this.ctx)) }
   get renderables() {
-    return [this.balls, this.boxes]
+    return [
+      this.boxes,
+      this.balls,
+    ]
   }
   get renderable() {
     $()
     class BallsRenderable extends Renderable {
-      dirtyRects = []
       @init init_Balls() {
         this.canvas.fullWindow = true
       }
@@ -44,7 +46,7 @@ export function setup() {
     const ctx = { world }
     const balls = $(new Balls(ctx))
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 10; i++) {
       balls.boxes.boxes.push($(new Box(ctx)))
     }
 
@@ -57,16 +59,15 @@ export function setup() {
     return function start() {
 
       world.render.add(balls)
-      // world.render.add(scene)
       // world.render.draw(1)
       // world.render.draw(1)
 
       world.anim.fps = 30
       world.anim.speed = .2
-      world.anim.add(balls.balls)
-      world.anim.add(balls.boxes)
       // world.anim.add(scene)
       world.anim.add(world.render)
+      world.anim.add(balls.balls)
+      world.anim.add(balls.boxes)
       world.anim.start()
 
       const stop = (e?: MouseEvent) => {

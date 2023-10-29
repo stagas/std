@@ -1,13 +1,10 @@
-log.active
-import { $, fx, init, of } from 'signal'
+// log.active
+import { $, fx, of } from 'signal'
 import { Canvas } from './canvas.ts'
 import { Context } from './context.ts'
+import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Scene } from './scene.ts'
-
-export class DirtyRect extends Rect {
-  constructor(public owner: Renderable) { super() }
-}
 
 export abstract class Renderable {
   constructor(
@@ -17,11 +14,10 @@ export abstract class Renderable {
     public pr = ctx.world.screen.$.pr,
   ) { }
   get prRecip() { return 1 / this.pr }
-  dirtyRects: $<DirtyRect>[] = [$(new DirtyRect(this))]
-  viewRect?: $<Rect>
 
-  // position
-  position = Renderable.Position.Fixed
+  scroll?: $<Point>
+
+  viewRect?: $<Rect> // ???
 
   // state flags
   isVisible?: boolean
@@ -55,12 +51,6 @@ export namespace Renderable {
   export interface It extends Scene {
     renderables?: Renderable.It[]
     renderable?: Renderable
-  }
-  export enum Position {
-    /** Fixed in space, no transformations. */
-    Fixed,
-    /** Translations apply. */
-    Translated
   }
   export enum Need {
     Idle = 0,

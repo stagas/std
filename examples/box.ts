@@ -12,12 +12,13 @@ export class Box extends Scene {
     $()
     const { ctx: { world } } = this
     const { screen: { viewport } } = of(world)
-    const s = Math.random() * 300 + 100
+    const s = Math.random() * 200 + 100
+    const fillColor = '#' + randomHex(3, '444', '477')
     return $(new BoxRenderable(this.ctx, $(new Rect(
       $($(new Point).set(s)),
       $($(new Point).rand(viewport))
     ), {
-      fillColor: '#' + randomHex()
+      fillColor
     })))
   }
   get animatable() {
@@ -33,12 +34,15 @@ class BoxRenderable extends Renderable {
   need = Renderable.Need.Render
   @fn render(c: CanvasRenderingContext2D) {
     const { rect } = this
+    c.save()
+    rect.pos.translateNegative(c)
     rect.fill(c)
+    c.restore()
     this.need ^= Renderable.Need.Render
   }
   @fn draw(c: CanvasRenderingContext2D) {
-    const { canvas, rect, pr, dirtyRects: [dr] } = this
+    const { canvas, rect, pr } = this
+    // rect.round().stroke(c, this.rect.fillColor) //
     rect.round().drawImage(canvas.el, c, pr, true)
-    dr.set(rect)
   }
 }

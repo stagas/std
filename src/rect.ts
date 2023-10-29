@@ -250,6 +250,17 @@ export class Rect extends Shape {
     }
     return this
   }
+  @fn translateNegative(o: PointLike | number) {
+    if (typeof o === 'number') {
+      this.x -= o
+      this.y -= o
+    }
+    else {
+      this.x -= o.x
+      this.y -= o.y
+    }
+    return this
+  }
   @fn scaleSizeLinear(n: number) {
     this.w += n
     this.h += n

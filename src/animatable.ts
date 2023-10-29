@@ -1,11 +1,13 @@
 // log.active
 
+import { Anim } from './anim.ts'
+
 export abstract class Animatable {
   need = Animatable.Need.Idle
   coeff?: number
   public init?(): void
-  public tick?(dt: number): number
-  public tickOne(dt: number): number { return 0 }
+  public tick?(dt: number): Animatable.Need
+  public tickOne(dt: number): void { }
   public draw?(t: number): void
 }
 

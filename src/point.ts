@@ -369,6 +369,11 @@ export class Point extends Shape {
     c.translate(x, y)
     return this
   }
+  translateNegative(c: CanvasRenderingContext2D) {
+    const { x, y } = this
+    c.translate(-x, -y)
+    return this
+  }
   withinRect(r: Rect) {
     return r.isPointWithin(this)
   }

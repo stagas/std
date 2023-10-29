@@ -1,5 +1,5 @@
 // log.active
-import { $, nu, of } from 'signal'
+import { $, fn, nu, of } from 'signal'
 import { Animatable } from '../src/animatable.ts'
 import { Mouse } from '../src/mouse.ts'
 import { Point } from '../src/point.ts'
@@ -20,7 +20,6 @@ export class BoxScene extends Scene {
     const it = this
     const { canvas } = of(it.ctx.world)
     class BoxSceneRenderable extends Renderable {
-      dirtyRects = []
       isVisible = true
       scroll = $(new Point)
     }
@@ -33,8 +32,23 @@ export class BoxScene extends Scene {
 
   get animatable() {
     $()
-    class BoxAnimatable extends Animatable { }
-    return $(new BoxAnimatable)
+    const it = this
+    let phase = 0
+    class BoxSceneAnimatable extends Animatable {
+      need = Animatable.Need.Tick
+      @fn tick() {
+        // console.log('tick')
+        return Animatable.Need.Tick
+      }
+      @fn tickOne(dt: number) {
+        // console.log('TICK ONE')
+        phase += 0.04
+        phase %= Math.PI * 2
+        it.renderable.scroll.y = Math.sin(phase) * 100 - 100
+        it.renderable.scroll.x = Math.cos(phase) * 100 - 100
+      }
+    }
+    return $(new BoxSceneAnimatable)
   }
 
   get pointable() {

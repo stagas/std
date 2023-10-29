@@ -1,7 +1,6 @@
 // log.active
-import { $, fn, fx, init, nu, of, when } from 'signal'
+import { $, fn, fx, nu, of, when } from 'signal'
 import { array, on, randomHex } from 'utils'
-import { Anim } from '../src/anim.ts'
 import { Animatable } from '../src/animatable.ts'
 import { Circle } from '../src/circle.ts'
 import { Point, byX, byY } from '../src/point.ts'
@@ -12,7 +11,7 @@ import { Gravity } from './gravity.ts'
 import { Motion } from './motion.ts'
 import { Walls } from './walls.ts'
 
-const BALL_COUNT = 20 //150
+const BALL_COUNT = 80 //150
 const BALL_TOLERANCE = 5
 const BALL_HOLD_TOLERANCE = 8
 const GRID_CELL_BITS = 2
@@ -156,13 +155,14 @@ class BallSceneAnimatable extends Animatable {
       if (walls.update(ball)) continue
       gravity.update(ball)
       motion.update(ball)
-      need |= Anim.State.NeedNextTick
+      need |= Animatable.Need.Tick
     }
     if (performance.now() - this.it.ctx.world.pointer.event.timeStamp < 2000) {
       balls[0].pos.set(cp)
     }
     if (!need) this.need ^= Animatable.Need.Draw
     else this.need = Animatable.Need.Tick | Animatable.Need.Draw
+
     return need
   }
   @fn tickOne() {
@@ -226,8 +226,6 @@ class BallSceneAnimatable extends Animatable {
       ball.circle.lerpPos.p1.set(ball.circle.lerpPos.p2)
       ball.circle.lerpPos.p2.set(ball.pos)
     }
-
-    return Anim.State.NeedNextTick
   }
   // @fn draw() {
   //   // world.canvas!.clear()

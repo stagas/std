@@ -11,11 +11,12 @@ export class Pointable {
     public mouse = $({
       btns: it.ctx.world.pointer.$.buttons,
       wheel: it.ctx.world.pointer.$.wheel,
-      get pos() {
-        return it.renderable.position === Renderable.Position.Fixed
-          ? it.ctx.world.input.mouse.pos
-          : it.ctx.world.input.mouse.pos //innerPos
-      },
+      pos: $(new Point),
+      // get pos() {
+      //   return it.renderable.position === Renderable.Position.Fixed
+      //     ? it.ctx.world.input.mouse.pos
+      //     : it.ctx.world.input.mouse.pos //innerPos
+      // },
       downPos: $(new Point)
     }),
   ) { }
@@ -33,12 +34,31 @@ export class Pointable {
   isDown = false
   isFocused = false
   isHovering = false
-  downPos = $(new Point)
+
+  @fx apply_pos() {
+    const { pos } = this.it.ctx.world.pointer
+    const { xy } = pos
+    $()
+    this.mouse.pos.set(xy)
+    // const { mouse: { pos, downPos } } = of(this)
+    // downPos.set(pos)
+  }
+
+  @fx apply_scroll() {
+    const { scroll } = of(this.it.renderable)
+    $()
+    this.mouse.pos.sub(scroll)
+    // const { mouse: { pos, downPos } } = of(this)
+    // downPos.set(pos)
+  }
+
   @fx apply_downPos() {
     const { isDown } = when(this)
+    const { mouse: { pos } } = of(this)
+    const { xy } = pos
     $()
-    const { mouse: { pos, downPos } } = of(this)
-    downPos.set(pos)
+    const { mouse: { downPos } } = of(this)
+    downPos.set(xy)
   }
 }
 

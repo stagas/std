@@ -1,9 +1,16 @@
-log.active
+// log.active
 import { $, fn, fx, of } from 'signal'
 import { maybePush, maybeSplice } from 'utils'
 import { Animatable } from './animatable.ts'
-import { DirtyRect, Renderable } from './renderable.ts'
+import { Renderable } from './renderable.ts'
 import { World } from './world.ts'
+import { Point } from './point.ts'
+import { Rect } from './rect.ts'
+
+interface Dirty {
+  owner: Renderable
+  rect: Rect
+}
 
 export class Render {
   constructor(public world: World) { }
@@ -14,37 +21,60 @@ export class Render {
   @fn remove(it: Renderable.It) {
     maybeSplice(this.its, it)
   }
-  *renderables(its: Renderable.It[]): Generator<Renderable.It & { renderable: Renderable }> {
+  *renderables(its: Renderable.It[], c?: CanvasRenderingContext2D): Generator<Renderable.It & { renderable: Renderable }> {
+    const { scroll } = this
     for (const it of its) {
-      const { renderables: rs } = it
-      if (rs) yield* this.renderables(rs)
-      if ('renderable' in it) yield it as any
+      const { renderables: rs, renderable: r } = it
+      if (r) {
+        if (c && r.scroll) {
+          c.restore()
+          c.save()
+          scroll.add(r.scroll).translate(c)
+          if (rs) yield* this.renderables(rs, c)
+          yield it as any
+          scroll.sub(r.scroll)
+        }
+        else {
+          if (rs) yield* this.renderables(rs, c)
+          yield it as any
+        }
+      }
+      else {
+        if (rs) yield* this.renderables(rs, c)
+      }
     }
   }
-  drawn: DirtyRect[] = []
+  dirty = new Map<Renderable, Dirty>()
+  drawn: Dirty[] = []
+  scroll: Point = $(new Point)
   @fn draw(t = 1) {
     const { Need: { Init, Render, Draw } } = Renderable
-    const { drawn } = this
+    const { dirty, drawn, scroll } = this
     const { canvas: { c }, screen: { pr } } = of(this.world)
 
-    // TODO: deal with position: Inner
+    scroll.zero()
 
     let i = 0
-    for (const { renderable: r } of this.renderables(this.its)) {
-      const dirty = r.dirtyRects
-      for (const dr of dirty) {
-        dr.clear(c)
-        for (let j = 0, otherRect: DirtyRect; j < i; j++) {
-          otherRect = drawn[j]
-          dr.intersectionRect(otherRect)
+
+    c.save()
+
+    for (const { renderable: r } of this.renderables(this.its, c)) {
+      let d = dirty.get(r)
+      if (d) {
+        c.restore()
+        d.rect.clear(c)
+        for (let j = 0, other: Dirty; j < i; j++) {
+          other = drawn[j]
+          d.rect.intersectionRect(other.rect)
             ?.drawImageNormalizePos(
-              otherRect.owner.canvas.el,
+              other.owner.canvas.el,
               c,
               pr,
-              otherRect
+              other.rect
             )
         }
-        dr.zero()
+        c.save()
+        scroll.translate(c)
       }
       // TODO: The 'init' in r 'render' in r etc don't
       // need to be in the hot loop and can be done
@@ -60,16 +90,22 @@ export class Render {
         r.need |= Draw
       }
       if (r.need & Draw) {
-        if ('draw' in r) r.draw(c, t)
+        if ('draw' in r) {
+          r.draw(c, t)
+          if (!d) {
+            d = {
+              owner: r,
+              rect: $(new Rect),
+            }
+            dirty.set(r, d)
+          }
+          d.rect.set(r.rect).translate(scroll)
+          drawn[i++] = d
+        }
         else r.need ^= Draw
       }
-      for (const dr of r.dirtyRects) {
-        //  if (i === drawn.length) drawn.push(dr)
-        //else
-        drawn[i] = dr
-        i++
-      }
     }
+    c.restore()
 
     // TODO: for the renderables that didn't draw, check if we drew
     // over their previous dirty rects and repeat the draws

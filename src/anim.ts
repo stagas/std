@@ -58,7 +58,7 @@ export class Anim {
         if (a.need & Tick) {
           a.coeff = coeff
           res = a.tick?.(dt)!
-          if (res & Anim.State.NeedNextTick) {
+          if (res & Animatable.Need.Tick) {
             state |= res
             a.tickOne(dt)
           }

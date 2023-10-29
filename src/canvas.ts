@@ -1,17 +1,21 @@
+// log.active
 import { $, fx } from 'signal'
 import { assign, dom } from 'utils'
-import { Point } from './point'
-import { World } from './world'
+import { Point } from './point.ts'
+import { World } from './world.ts'
+import { Rect } from './rect.ts'
+
+const p = $(new Point)
 
 export class Canvas {
-  world = World.Current
-  size = $($(new Point, { pr: this.world.screen.$.pr! }).resizeToWindow())
-  width = this.size.$.w
-  height = this.size.$.h
-  left = 0
-  right = this.size.$.w
-  bottom = this.size.$.h
+  constructor(
+    public world: World,
+    public rect = $(new Rect)
+  ) { }
+
   fullWindow?: boolean
+
+  style?: CSSStyleDeclaration
 
   el = dom.el<HTMLCanvasElement>('canvas', {
     style: {
@@ -21,25 +25,30 @@ export class Canvas {
       `
     }
   })
+
   get c() {
     return this.el.getContext('2d')!
   }
 
-  @fx autoResizeToFitWindow() {
-    const { fullWindow, size: { pr }, world: { screen: { viewport: { x, y } } } } = $.of(this)
-    if (fullWindow) this.size.resizeToWindow()
+  @fx resize_to_window() {
+    const { fullWindow, world: { screen: { viewport: { x, y } } } } = $.of(this)
+    if (fullWindow) this.rect.size.resizeToWindow()
   }
 
-  style?: CSSStyleDeclaration
-  @fx init() {
-    const { size, el, c } = this
-    const { ifNotZero, pr, prScaled: { wh } } = $.of(size)
+  @fx assign_size() {
+    const { rect: { size }, el, c } = this
+    const { ifNotZero, w, h } = $.of(size)
+    const { pr } = $.of(this.world.screen)
 
-    assign(el, wh)
-    c.scale(pr, pr)
+    $.untrack(() => {
+      assign(el, p.set(size).mul(pr).widthHeight)
+      c.scale(pr, pr)
+    })
 
     const { style } = $.of<Canvas>(this)
-    assign(style, size.whPx)
+    $.untrack(() => {
+      assign(style, p.set(size).widthHeightPx)
+    })
   }
 
   appendTo(el: HTMLElement) {
@@ -49,24 +58,25 @@ export class Canvas {
   }
 
   clear() {
-    this.size.clear(this.c)
+    this.rect.size.clear(this.c)
     return this
   }
-  fill(color?: string) {
-    this.size.fill(this.c, color)
-    return this
+
+  fill() {
+    this.rect.size.fill(this.c)
   }
 }
 
-export function test_Canvas() {
+export function test_canvas() {
   // @env browser
   describe('Canvas', () => {
     it('works', () => {
-      const canvas = $(new Canvas)
-      canvas.size.set({ x: 100, y: 100 })
+      const world = $(new World)
+      const canvas = $(new Canvas(world))
+      canvas.rect.size.set({ x: 100, y: 100 })
       canvas.appendTo(dom.body)
       fx(() => {
-        const { pr } = canvas.size
+        // const { pr } = canvas.size
         canvas.fill()
       })
     })

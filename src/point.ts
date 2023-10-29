@@ -1,7 +1,8 @@
 import { $, alias, fn } from 'signal'
-import { MatrixLike } from './matrix.ts'
-import { Rect } from './rect.ts'
+import type { MatrixLike } from './matrix.ts'
+import type { Rect } from './rect.ts'
 import { Shape } from './shape.ts'
+import { drawText } from 'utils'
 
 export type PointLike = Point['json']
 
@@ -17,24 +18,25 @@ export class Point extends Shape {
     const { x, y } = this
     return [x, y] as const
   }
-  get whPx() {
+  get widthHeightPx() {
     return {
       width: this.width + 'px',
       height: this.height + 'px',
     }
   }
-  get wh() {
+  get widthHeight() {
     const { width, height } = this
     return { width, height }
   }
+  get wh() {
+    const { w, h } = this
+    return { w, h }
+  }
   xy = alias(this, 'json')
 
-  pr = 1
-  get prX() { return this.x * this.pr }
-  get prY() { return this.y * this.pr }
-  get prScaled() {
-    const { prX: x, prY: y } = $(this).$
-    return $(new Point, { x, y })
+  get styleTransformTranslate() {
+    const { x, y } = this
+    return `translate(${x}px,${y}px)`
   }
 
   left = alias(this, 'x')
@@ -53,11 +55,6 @@ export class Point extends Shape {
   width = alias(this, 'x')
   height = alias(this, 'y')
 
-  col = alias(this, 'x')
-  line = alias(this, 'y')
-  get lineCol() {
-    return this
-  }
   @fn resizeToWindow() {
     this.w = window.innerWidth
     this.h = window.innerHeight
@@ -83,6 +80,9 @@ export class Point extends Shape {
   }
   zero() {
     return this.set(0)
+  }
+  get hasSize() {
+    return Boolean(this.x && this.y)
   }
   get ifNotZero(): this | undefined {
     if (!this.equals(0)) return this
@@ -114,6 +114,17 @@ export class Point extends Shape {
     }
     return this
   }
+  @fn mulAdd(o: PointLike | number, t: number) {
+    if (typeof o === 'number') {
+      this.x += o * t
+      this.y += o * t
+    }
+    else {
+      this.x += o.x * t
+      this.y += o.y * t
+    }
+    return this
+  }
   @fn sub(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x -= o
@@ -122,6 +133,17 @@ export class Point extends Shape {
     else {
       this.x -= o.x
       this.y -= o.y
+    }
+    return this
+  }
+  @fn mulSub(o: PointLike | number, t: number) {
+    if (typeof o === 'number') {
+      this.x -= o * t
+      this.y -= o * t
+    }
+    else {
+      this.x -= o.x * t
+      this.y -= o.y * t
     }
     return this
   }
@@ -165,6 +187,12 @@ export class Point extends Shape {
     const { x, y } = this
     this.x = !isFinite(x) ? 0 : x
     this.y = !isFinite(y) ? 0 : y
+    return this
+  }
+  @fn abs() {
+    const { x, y } = this
+    this.x = Math.abs(x)
+    this.y = Math.abs(y)
     return this
   }
   @fn floor() {
@@ -231,7 +259,7 @@ export class Point extends Shape {
       + Math.abs(o?.y ?? y)
   }
   distance(o: PointLike) {
-    return this.temp.set(o).sub(this).mag
+    return temp.set(o).sub(this).mag
   }
   euclidean = alias(this, 'distance')
   @fn transformMatrix(m: MatrixLike) {
@@ -239,6 +267,13 @@ export class Point extends Shape {
     const { x, y } = this
     this.x = a * x + c * y + e
     this.y = b * x + d * y + f
+    return this
+  }
+  @fn transformMatrixPr(m: MatrixLike, pr: number, prRecip: number) {
+    const { a, b, c, d, e, f } = m
+    const { x, y } = this
+    this.x = (a * x * pr + c * y * pr + e) * prRecip
+    this.y = (b * x * pr + d * y * pr + f) * prRecip
     return this
   }
   @fn transformMatrixInverse(m: MatrixLike) {
@@ -270,6 +305,14 @@ export class Point extends Shape {
     const { x, y } = this
     this.x = (x - e) / a
     this.y = (y - f) / d
+    return this
+  }
+  @fn normalizeMatrixPr(m: MatrixLike, pr: number, prRecip: number) {
+    // TODO: normalize skew (b c)
+    const { a, b, c, d, e, f } = m
+    const { x, y } = this
+    this.x = (((x * pr) - e) / a) * prRecip
+    this.y = (((y * pr) - f) / d) * prRecip
     return this
   }
   @fn lerp(o: PointLike, t: number) {
@@ -321,6 +364,11 @@ export class Point extends Shape {
     c.lineTo(x, y)
     return this
   }
+  translate(c: CanvasRenderingContext2D) {
+    const { x, y } = this
+    c.translate(x, y)
+    return this
+  }
   withinRect(r: Rect) {
     return r.isPointWithin(this)
   }
@@ -366,6 +414,15 @@ export class Point extends Shape {
 
     return this
   }
+  drawText(
+    c: CanvasRenderingContext2D,
+    text: string,
+    color?: string,
+    outlineWidth?: number,
+    outlineColor?: string): Point {
+    drawText(c, this, text, color, outlineWidth, outlineColor)
+    return this
+  }
 }
 
 const temp = $(new Point)
@@ -391,3 +448,25 @@ const temp = $(new Point)
 //   .local($ => class {
 
 //   })
+
+export function test_point() {
+  // @env browser
+  describe('Point', () => {
+    it('works', () => {
+      const p = $(new Point)
+      expect(p.x).toEqual(0)
+      expect(p.y).toEqual(0)
+      expect(p.width).toEqual(0)
+      p.x = 2
+      expect(p.width).toEqual(2)
+    })
+  })
+}
+
+export function byX(a: { x: number }, b: { x: number }) {
+  return a.x - b.x
+}
+
+export function byY(a: { y: number }, b: { y: number }) {
+  return a.y - b.y
+}

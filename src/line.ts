@@ -5,11 +5,11 @@ import { Shape } from './shape.ts'
 
 export enum Intersect {
   None = 0,
-  Left = 1 << 1,
-  Top = 1 << 2,
-  Right = 1 << 3,
-  Bottom = 1 << 4,
-  Inside = 1 << 5,
+  Left = 1,
+  Top = 1 << 1,
+  Right = 1 << 2,
+  Bottom = 1 << 3,
+  Inside = 1 << 4,
 }
 
 export interface LineLike {
@@ -18,6 +18,7 @@ export interface LineLike {
 }
 
 export class Line extends Shape {
+  static create() { return $(new Line) }
   p1 = $(new Point)
   p2 = $(new Point)
   deltaPoint = $(new Point)
@@ -26,6 +27,10 @@ export class Line extends Shape {
   get json() {
     const { p1, p2 } = this
     return { p1: p1.json, p2: p2.json }
+  }
+  get values() {
+    const { p1, p2 } = this
+    return [...p1.values, ...p2.values] as const
   }
 
   get _center() { return $(new Point) }
@@ -68,18 +73,14 @@ export class Line extends Shape {
   }
   @fn lerp(t: number) {
     const { p1, p2, deltaPoint, lerpPoint } = this
-    lerpPoint.set(p2).add(deltaPoint.set(p2).sub(p1).mul(t))
+    lerpPoint
+      .set(p1)
+      .add(
+        deltaPoint
+          .set(p2)
+          .sub(p1).mul(t))
     return lerpPoint
   }
-
-  @fx keepPrevPos() {
-    const { x, y } = this.p2
-    return () => {
-      this.p1.x = x
-      this.p1.y = y
-    }
-  }
-
   isPointWithin(p: PointLike) {
     const { start, end } = this
     return p.y === start.y

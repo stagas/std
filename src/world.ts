@@ -1,13 +1,18 @@
-import { $, fn, fx, init } from 'signal'
-import { Anim } from './anim'
-import { Screen } from './screen'
+import { $ } from 'signal'
+import { Anim } from './anim.ts'
+import { Canvas } from './canvas.ts'
+import { Pointer } from './pointer.ts'
+import { Render } from './render.ts'
+import { Screen } from './screen.ts'
+import { Skin } from './skin.ts'
 
 export class World {
-  static Current: $<World>
+  skin = $(new Skin)
   screen = $(new Screen)
   anim = $(new Anim)
-  isAnimating = this.anim.$.isAnimating
-  @init init() {
-    World.Current = $(this)
+  render = $(new Render(this))
+  canvas?: $<Canvas>
+  get pointer() {
+    return $(new Pointer(this))
   }
 }

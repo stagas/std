@@ -1,5 +1,3 @@
-import { $ } from 'signal'
-
 export class Shape {
   label?: string
   strokeColor = '#3f3'
@@ -8,8 +6,5 @@ export class Shape {
   get text() {
     return (this.label ? `${this.label}: ` : '')
       + this.values.join(' ')
-  }
-  get temp(): $<this> {
-    return $(Object.getPrototypeOf(this).constructor) as any
   }
 }

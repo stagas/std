@@ -27,5 +27,8 @@
     "titleBar.inactiveBackground": "#f26c3299",
     "titleBar.inactiveForeground": "#15202b99"
   },
-  "peacock.color": "#f26c32"
+  "peacock.color": "#f26c32",
+  "exportall.config.folderListener": [
+    "/src"
+  ]
 }

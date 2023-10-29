@@ -1,4 +1,4 @@
-import { $, alias, fn, fx } from 'signal'
+import { $, alias, fn } from 'signal'
 import { MatrixLike } from './matrix.ts'
 import { Point, PointLike } from './point.ts'
 import { Shape } from './shape.ts'
@@ -7,13 +7,58 @@ import { Line } from './line.ts'
 export type RectLike = Rect['json']
 
 export class Rect extends Shape {
-  pos = $(new Point)
-  size = $(new Point)
+  static create() { return $(new Rect) }
+  static pathAround(c: CanvasRenderingContext2D, rects: Rect[], count: number) {
+    let r = rects[0]
+    c.moveTo(r.left, r.top)
+    c.lineTo(r.right, r.top)
+    c.lineTo(r.right, r.bottom)
+    let n = 1
+    for (; n < count; n++) {
+      r = rects[n]
+      c.lineTo(r.right, r.top)
+      c.lineTo(r.right, r.bottom)
+    }
+    --n
+    for (; n >= 0; n--) {
+      r = rects[n]
+      c.lineTo(r.left, r.bottom)
+      c.lineTo(r.left, r.top)
+    }
+  }
+  static pathAroundLeft(c: CanvasRenderingContext2D, rects: Rect[], count: number) {
+    let r = rects[count - 1]
+    c.moveTo(r.left, r.bottom)
+    c.lineTo(r.left, r.top)
+    let n = count - 2
+    for (; n >= 0; n--) {
+      r = rects[n]
+      c.lineTo(r.left, r.bottom)
+      c.lineTo(r.left, r.top)
+    }
+    c.lineTo(r.right, r.top)
+  }
+  static pathAroundRight(c: CanvasRenderingContext2D, rects: Rect[], count: number) {
+    let r = rects[0]
+    c.moveTo(r.right, r.top)
+    c.lineTo(r.right, r.bottom)
+    let n = 1
+    for (; n < count; n++) {
+      r = rects[n]
+      c.lineTo(r.right, r.top)
+      c.lineTo(r.right, r.bottom)
+    }
+    c.lineTo(r.left, r.bottom)
+  }
 
-  x = this.pos.$.x
-  y = this.pos.$.y
-  w = this.size.$.w
-  h = this.size.$.h
+  constructor(
+    public size = $(new Point),
+    public pos = $(new Point),
+    public x = pos.$.x,
+    public y = pos.$.y,
+    public w = size.$.w,
+    public h = size.$.h,
+  ) { super() }
 
   get json() {
     const { x, y, w, h } = this
@@ -24,18 +69,9 @@ export class Rect extends Shape {
     return [x, y, w, h] as const
   }
 
-  pr?: number
-  @fx syncPr() {
-    const { pr } = $.of(this)
-    $.untrack()
-    this.pos.pr
-      = this.size.pr
-      = pr
-  }
-
-  col = alias(this, 'x')
-  line = alias(this, 'y')
-  lineCol = alias(this, 'pos')
+  // col = alias(this, 'x')
+  // line = alias(this, 'y')
+  // lineCol = alias(this, 'pos')
 
   width = alias(this, 'w')
   height = alias(this, 'h')
@@ -108,25 +144,45 @@ export class Rect extends Shape {
     const { cx: x, cy: y } = $(this).$
     return $(new Point, { x, y })
   }
-  get centerTop() {
-    const { cx: x, top: y } = $(this).$
-    return $(new Point, { x, y })
-  }
-  get centerBottom() {
-    const { cx: x, bottom: y } = $(this).$
-    return $(new Point, { x, y })
-  }
   get centerLeft() {
     const { left: x, cy: y } = $(this).$
+    return $(new Point, { x, y })
+  }
+  get centerTop() {
+    const { cx: x, top: y } = $(this).$
     return $(new Point, { x, y })
   }
   get centerRight() {
     const { right: x, cy: y } = $(this).$
     return $(new Point, { x, y })
   }
+  get centerBottom() {
+    const { cx: x, bottom: y } = $(this).$
+    return $(new Point, { x, y })
+  }
+
+  cl = alias(this, 'centerLeft')
+  ct = alias(this, 'centerTop')
+  cr = alias(this, 'centerRight')
+  cb = alias(this, 'centerBottom')
+
   safe() {
+    // TODO: bench which is faster, this or single .finite()
     $.fx(() => {
-      this.finite()
+      const { x } = this
+      this.x = !isFinite(x) ? 0 : x
+    })
+    $.fx(() => {
+      const { y } = this
+      this.y = !isFinite(y) ? 0 : y
+    })
+    $.fx(() => {
+      const { w } = this
+      this.w = !isFinite(w) ? 0 : w
+    })
+    $.fx(() => {
+      const { h } = this
+      this.h = !isFinite(h) ? 0 : h
     })
     return this
   }
@@ -137,7 +193,7 @@ export class Rect extends Shape {
     if (this.w && this.h) return this
   }
   get hasSize() {
-    return Boolean(this.w || this.h)
+    return this.size.hasSize
   }
   @fn finite() {
     const { x, y, w, h } = this
@@ -265,32 +321,51 @@ export class Rect extends Shape {
     c.fillRect(x, y, w, h)
     return this
   }
-  // drawImage = $.fn(function rect_drawImage(
-  //   { x, y, w, h },
-  //   c: CanvasRenderingContext2D,
-  //   canvas: HTMLCanvasElement,
-  //   pr: number = 1,
-  //   normalize = false): Rect {
-  //   let n = !normalize ? 1 : 0
-  //   c.drawImage(
-  //     canvas,
-  //     x * pr * n,
-  //     y * pr * n,
-  //     w * pr,
-  //     h * pr,
-  //     x,
-  //     y,
-  //     w,
-  //     h
-  //   )
-  //   return $._
-  // })
+  drawImage(
+    canvas: HTMLCanvasElement,
+    c: CanvasRenderingContext2D,
+    pr = 1,
+    normalize = false) {
+    const { x, y, w, h } = this
+    let n = !normalize ? 1 : 0
+    c.drawImage(
+      canvas,
+      x * pr * n,
+      y * pr * n,
+      w * pr,
+      h * pr,
+      x,
+      y,
+      w,
+      h
+    )
+    return this
+  }
+  drawImageNormalizePos(
+    canvas: HTMLCanvasElement,
+    c: CanvasRenderingContext2D,
+    pr: number,
+    pos: PointLike) {
+    const { x, y, w, h } = this
+    c.drawImage(
+      canvas,
+      (x - pos.x) * pr,
+      (y - pos.y) * pr,
+      w * pr,
+      h * pr,
+      x,
+      y,
+      w,
+      h
+    )
+    return this
+  }
   @fn resizeToWindow() {
     this.w = window.innerWidth
     this.h = window.innerHeight
     return this
   }
-  @fn isPointWithin(o: PointLike) {
+  isPointWithin(o: PointLike) {
     const { x, y, r, b } = this
     return (
       o.x >= x && o.x <= r &&
@@ -308,7 +383,7 @@ export class Rect extends Shape {
   }
   @fn transformMatrixScaled(
     m: MatrixLike,
-    pr: number = 1) {
+    pr = 1) {
     if (pr === 1) return this.transformMatrix(m)
     else return this.scale(pr).transformMatrix(m).scale(1 / pr)
   }
@@ -336,16 +411,19 @@ export class Rect extends Shape {
 
     return this
   }
-  @fn combineRects(rects: RectLike[]) {
+  @fn combineRects(rects: RectLike[], count?: number) {
+    let i = 0
     for (const r of rects) {
       this.combine(r)
+      if (++i === count) break
     }
     return this
   }
-  @fn intersectionRect(
-    r1: Rect,
-    r2: Rect) {
-    const { temp } = this
+  @fn intersectionRect(r2: Rect) {
+    const r1 = this
+
+    if (r1.right < r2.left || r1.left > r2.right) return
+
     const x1 = Math.max(r1.left, r2.left)
     const y1 = Math.max(r1.top, r2.top)
     const x2 = Math.min(r1.right, r2.right)
@@ -373,4 +451,14 @@ export class Rect extends Shape {
 
     return this
   }
+}
+
+const temp = $(new Rect)
+
+export function byPosX(a: { pos: Point }, b: { pos: Point }) {
+  return a.pos.x - b.pos.x
+}
+
+export function byPosY(a: { pos: Point }, b: { pos: Point }) {
+  return a.pos.y - b.pos.y
 }

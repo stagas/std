@@ -1,7 +1,7 @@
 // log.active
 import { $, fn, fx, nu, of, when } from 'signal'
 import { array, on, randomHex } from 'utils'
-import { Animatable } from '../src/animatable.ts'
+import { Animatable, AnimatableNeed } from '../src/animatable.ts'
 import { Circle } from '../src/circle.ts'
 import { Point, byX, byY } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
@@ -145,7 +145,7 @@ export class BallScene extends Scene {
 
 class BallSceneAnimatable extends Animatable {
   constructor(public it: BallScene) { super() }
-  need = Animatable.Need.Tick
+  need = AnimatableNeed.Tick
   @fn tick() {
     const { gravity, motion, walls, balls } = this.it
 
@@ -155,13 +155,13 @@ class BallSceneAnimatable extends Animatable {
       if (walls.update(ball)) continue
       gravity.update(ball)
       motion.update(ball)
-      need |= Animatable.Need.Tick
+      need |= AnimatableNeed.Tick
     }
     if (performance.now() - this.it.ctx.world.pointer.event.timeStamp < 2000) {
       balls[0].pos.set(cp)
     }
-    if (!need) this.need ^= Animatable.Need.Draw
-    else this.need = Animatable.Need.Tick | Animatable.Need.Draw
+    if (!need) this.need ^= AnimatableNeed.Draw
+    else this.need = AnimatableNeed.Tick | AnimatableNeed.Draw
 
     return need
   }

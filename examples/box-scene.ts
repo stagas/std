@@ -1,6 +1,6 @@
 // log.active
 import { $, fn, nu, of } from 'signal'
-import { Animatable } from '../src/animatable.ts'
+import { Animatable, AnimatableNeed } from '../src/animatable.ts'
 import { Mouse } from '../src/mouse.ts'
 import { Point } from '../src/point.ts'
 import { Pointable } from '../src/pointable.ts'
@@ -38,7 +38,7 @@ export class BoxScene extends Scene {
     const pi2 = Math.PI * 2
     const { ctx: { world: { screen: { viewport } } } } = it
     class BoxSceneAnimatable extends Animatable {
-      need = Animatable.Need.Tick
+      need = AnimatableNeed.Tick
       @fn tick(t: number) {
         let i = 0
         const { center } = viewport
@@ -49,9 +49,9 @@ export class BoxScene extends Scene {
               Math.cos(phase) * 400
             )
         }
-        return Animatable.Need.Tick
+        return AnimatableNeed.Tick
       }
-      @fn tickOne(dt: number) {
+      tickOne(dt: number) {
         phase += it.speed
         phase %= pi2
         it.renderable.scroll.zero().angleShiftBy(phase, 100)

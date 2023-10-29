@@ -3,7 +3,7 @@ import { $, fn, init } from 'signal'
 import { dom } from 'utils'
 import { Point } from '../src/point.ts'
 import { Pointable } from '../src/pointable.ts'
-import { Renderable } from '../src/renderable.ts'
+import { Need, Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 import { World } from '../src/world.ts'
 import { BallScene } from './ball-scene.ts'
@@ -29,7 +29,7 @@ class Balls extends Scene {
       }
       @fn init(c: CanvasRenderingContext2D) {
         c.imageSmoothingEnabled = false
-        this.need ^= Renderable.Need.Init
+        this.need ^= Need.Init
       }
     }
     return $(new BallsRenderable(this.ctx))

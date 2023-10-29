@@ -10,6 +10,11 @@ export class Point extends Shape {
   x = 0
   y = 0
 
+  setParameters(x: number, y: number) {
+    this.x = x
+    this.y = y
+    return this
+  }
   get json() {
     const { x, y } = this
     return { x, y }
@@ -104,7 +109,7 @@ export class Point extends Shape {
   get ifNotZero(): this | undefined {
     if (!this.equals(0)) return this
   }
-  @fn set(o: PointLike | number) {
+  set(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x = o
       this.y = o
@@ -120,7 +125,7 @@ export class Point extends Shape {
     this.y = o.pageY
     return this
   }
-  @fn add(o: PointLike | number) {
+  add(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x += o
       this.y += o
@@ -142,7 +147,7 @@ export class Point extends Shape {
     }
     return this
   }
-  @fn sub(o: PointLike | number) {
+  sub(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x -= o
       this.y -= o
@@ -164,7 +169,7 @@ export class Point extends Shape {
     }
     return this
   }
-  @fn div(o: PointLike | number) {
+  div(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x /= o
       this.y /= o
@@ -175,7 +180,7 @@ export class Point extends Shape {
     }
     return this
   }
-  @fn mul(o: PointLike | number) {
+  mul(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x *= o
       this.y *= o
@@ -224,7 +229,7 @@ export class Point extends Shape {
     this.y = Math.ceil(y)
     return this
   }
-  @fn round() {
+  round() {
     const { x, y } = this
     this.x = Math.round(x)
     this.y = Math.round(y)
@@ -246,7 +251,7 @@ export class Point extends Shape {
     const { x, y } = this
     return Math.atan2(y, x)
   }
-  @fn angleShiftBy(angle: number, distance: number) {
+  angleShiftBy(angle: number, distance: number) {
     this.x += distance * Math.cos(angle)
     this.y += distance * Math.sin(angle)
     return this
@@ -261,7 +266,8 @@ export class Point extends Shape {
   }
   get mag() {
     const { x, y } = this
-    return Math.sqrt(x * x + y * y)
+    return Math.hypot(x, y)
+    // return Math.sqrt(x * x + y * y)
   }
   chebyshev(o?: PointLike) {
     const { x, y } = this

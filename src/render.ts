@@ -1,8 +1,8 @@
 // log.active
 import { $, fn, fx, of } from 'signal'
 import { maybePush, maybeSplice } from 'utils'
-import { Animatable } from './animatable.ts'
-import { Renderable } from './renderable.ts'
+import { Animatable, AnimatableNeed } from './animatable.ts'
+import { Need, Renderable } from './renderable.ts'
 import { World } from './world.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
@@ -51,8 +51,8 @@ export class Render {
   dirty = new Map<Renderable, Dirty>()
   drawn: Dirty[] = []
   scroll: Point = $(new Point)
-  @fn draw(t = 1) {
-    const { Need: { Init, Render, Draw } } = Renderable
+  draw(t = 1) {
+    // const { Need: { Init, Render, Draw } } = Renderable
     const { dirty, drawn, scroll } = this
     const { canvas: { c }, screen: { pr } } = of(this.world)
 
@@ -84,17 +84,17 @@ export class Render {
       // TODO: The 'init' in r 'render' in r etc don't
       // need to be in the hot loop and can be done
       // at an earlier step.
-      if (r.need & Init) {
+      if (r.need & Need.Init) {
         if ('init' in r) r.init(r.canvas.c)
-        else r.need ^= Init
-        r.need |= Render
+        else r.need ^= Need.Init
+        r.need |= Need.Render
       }
-      if (r.need & Render) {
+      if (r.need & Need.Render) {
         if ('render' in r) r.render(r.canvas.c, t, true)
-        else r.need ^= Render
-        r.need |= Draw
+        else r.need ^= Need.Render
+        r.need |= Need.Draw
       }
-      if (r.need & Draw) {
+      if (r.need & Need.Draw) {
         if (r.draw) {
           r.draw(c, t, scroll)
           if (!d) {
@@ -107,7 +107,7 @@ export class Render {
           d.rect.setPos(r.rect).translateByPos(scroll)
           drawn[i++] = d
         }
-        else r.need ^= Draw
+        else r.need ^= Need.Draw
       }
     }
     // c.restore()
@@ -118,19 +118,19 @@ export class Render {
   get animatable() {
     $()
     const it = this
-    const { Need: { Init, Render, Draw } } = Renderable
+    // const { Need: { Init, Render, Draw } } = Renderable
     class RenderAnimatable extends Animatable {
       @fx trigger_draw() {
         let pass = 0
         for (const { renderable: r } of it.renderables(it.its)) {
           pass |= r.need
         }
-        if (pass & (Render | Draw)) {
+        if (pass & (Need.Render | Need.Draw)) {
           $()
-          this.need |= Animatable.Need.Draw
+          this.need |= AnimatableNeed.Draw
         }
       }
-      @fn draw(t: number) {
+      draw(t: number) {
         it.draw(t)
       }
     }

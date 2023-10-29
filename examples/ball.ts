@@ -2,7 +2,7 @@
 import { $, fn, fx, of, when } from 'signal'
 import { Circle } from '../src/circle.ts'
 import { Point } from '../src/point.ts'
-import { Renderable } from '../src/renderable.ts'
+import { Need, Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 
 export class Ball extends Scene {
@@ -40,12 +40,12 @@ class BallRenderable extends Renderable {
     it.circle.lerpPos.p2.set(it.pos).round()
   }
   @fn init(c: CanvasRenderingContext2D) {
-    const { Need: { Init } } = Renderable
+    // const { Need: { Init } } = Renderable
     c.imageSmoothingEnabled = false
-    this.need ^= Init
+    this.need ^= Need.Init
   }
   @fn render(c: CanvasRenderingContext2D) {
-    const { Need: { Render } } = Renderable
+    // const { Need: { Render } } = Renderable
     const { it } = this
     const { circle } = it
     const { radius: r } = circle
@@ -53,9 +53,9 @@ class BallRenderable extends Renderable {
     c.translate(r, r)
     circle.fill(c)
     c.restore()
-    this.need ^= Render
+    this.need ^= Need.Render
   }
-  @fn draw(c: CanvasRenderingContext2D, t: number) {
+  draw(c: CanvasRenderingContext2D, t: number) {
     const { it, canvas, rect, pr } = of(this)
     it.circle.lerpPos.lerp(t)
     rect.center.set(it.circle.lerpPos.lerpPoint.round())

@@ -71,15 +71,12 @@ export class Line extends Shape {
       p2.y - p1.y
     )
   }
-  @fn lerp(t: number) {
-    const { p1, p2, deltaPoint, lerpPoint } = this
-    lerpPoint
-      .set(p1)
-      .add(
-        deltaPoint
-          .set(p2)
-          .sub(p1).mul(t))
-    return lerpPoint
+  lerp(t: number) {
+    const { p1, p2, lerpPoint } = this
+    return lerpPoint.setParameters(
+      p1.x + (p2.x - p1.x) * t,
+      p1.y + (p2.y - p1.y) * t,
+    )
   }
   isPointWithin(p: PointLike) {
     const { start, end } = this

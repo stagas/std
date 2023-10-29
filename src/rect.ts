@@ -68,8 +68,7 @@ export class Rect extends Shape {
     const { x, y, w, h } = this
     return [x, y, w, h] as const
   }
-
-  @fn setParameters(x: number, y: number, w: number, h: number) {
+  setParameters(x: number, y: number, w: number, h: number) {
     this.x = x
     this.y = y
     this.w = w
@@ -226,7 +225,7 @@ export class Rect extends Shape {
     }
     return this
   }
-  @fn setPos({ x, y }: PointLike) {
+  setPos({ x, y }: PointLike) {
     this.x = x
     this.y = y
     return this
@@ -258,7 +257,7 @@ export class Rect extends Shape {
     }
     return this
   }
-  @fn translateByPos(o: PointLike) {
+  translateByPos(o: PointLike) {
     this.x += o.x
     this.y += o.y
     return this
@@ -308,7 +307,7 @@ export class Rect extends Shape {
     this.h = Math.ceil(h)
     return this
   }
-  @fn round() {
+  round() {
     const { x, y, w, h } = this
     this.x = Math.round(x)
     this.y = Math.round(y)
@@ -464,7 +463,7 @@ export class Rect extends Shape {
     }
     return this
   }
-  @fn intersectionRect(r2: Rect) {
+  intersectionRect(r2: Rect) {
     const r1 = this
 
     if (r1.right < r2.left || r1.left > r2.right) return

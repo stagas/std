@@ -1,11 +1,11 @@
 // log.active
 import { $, fn } from 'signal'
 import { clamp, maybePush, maybeSplice } from 'utils'
-import { Animatable } from './animatable.ts'
+import { Animatable, AnimatableNeed } from './animatable.ts'
 
 export class Anim {
   its: Animatable.It[] = []
-  state = Anim.State.Idle
+  state = AnimState.Idle
 
   tickTime = 0
   speed = 1
@@ -23,8 +23,8 @@ export class Anim {
     return this.timeStep * 5
   }
   @fn tick = () => {
-    const { Need: { Init, Tick, Draw } } = Animatable
-    const { State: { Starting, NeedNextTick } } = Anim
+    // const { Need: { Init, Tick, Draw } } = Animatable
+    // const { State: { Starting, NeedNextTick } } = Anim
     const { its, timeStep, maxDeltaTime, tickTime, coeff } = this
     let { state, acc } = this
 
@@ -32,7 +32,7 @@ export class Anim {
     const dt = now - tickTime
     this.tickTime = now
 
-    state ^= NeedNextTick
+    state ^= AnimState.NeedNextTick
 
     // if (dt > maxDeltaTime) {
     //   //!: discard
@@ -41,7 +41,7 @@ export class Anim {
 
     // let needNextTick: boolean | undefined
 
-    if (state & Starting) {
+    if (state & AnimState.Starting) {
       // then start with a full timeStep in the accumulator,
       // so that we get an items update() and have
       // something to draw.
@@ -55,11 +55,11 @@ export class Anim {
       acc -= timeStep
       let res: number
       for (const { animatable: a } of its) {
-        if (a.need & Tick) {
+        if (a.need & AnimatableNeed.Tick) {
           a.coeff = coeff
           res = a.tick?.(dt)!
-          if (res & Animatable.Need.Tick) {
-            state |= NeedNextTick
+          if (res & AnimatableNeed.Tick) {
+            state |= AnimState.NeedNextTick
             a.tickOne(dt)
           }
         }
@@ -69,27 +69,27 @@ export class Anim {
     while (acc > timeStep) {
       acc -= timeStep
       for (const { animatable: a } of its) {
-        a.need & Tick && (state |= a.tick?.(dt)!)
+        a.need & AnimatableNeed.Tick && (state |= a.tick?.(dt)!)
       }
     }
 
     const t = clamp(0, 1, (this.acc = acc) / timeStep)
 
     for (const { animatable: a } of its) {
-      a.need & Init && a.init?.()
-      a.need & Draw && a.draw?.(t)
+      a.need & AnimatableNeed.Init && a.init?.()
+      a.need & AnimatableNeed.Draw && a.draw?.(t)
     }
 
-    if (state & NeedNextTick) {
-      this.state |= Anim.State.Animating
+    if (state & AnimState.NeedNextTick) {
+      this.state |= AnimState.Animating
       requestAnimationFrame(this.tick)
     }
-    else if (state & Anim.State.Stopping) {
-      this.state = Anim.State.Idle
+    else if (state & AnimState.Stopping) {
+      this.state = AnimState.Idle
       this.stop()
     }
     else {
-      this.state |= Anim.State.Stopping
+      this.state |= AnimState.Stopping
       requestAnimationFrame(this.tick)
     }
   }
@@ -107,13 +107,13 @@ export class Anim {
   }
   @fn start() {
     const { state } = this
-    if (state & (Anim.State.Animating | Anim.State.Starting)) return
-    this.state = Anim.State.Starting
+    if (state & (AnimState.Animating | AnimState.Starting)) return
+    this.state = AnimState.Starting
     this.tick()
     return this
   }
   @fn stop() {
-    this.state = Anim.State.Idle
+    this.state = AnimState.Idle
     this.acc = 0
     return this
   }
@@ -123,12 +123,12 @@ export class Anim {
   // }
 }
 
-export namespace Anim {
-  export const enum State {
-    Idle = 0,
-    Starting = 1 << 0,
-    Stopping = 1 << 1,
-    Animating = 1 << 2,
-    NeedNextTick = 1 << 3,
-  }
+export const enum AnimState {
+  Idle = 0,
+  Starting = 1 << 0,
+  Stopping = 1 << 1,
+  Animating = 1 << 2,
+  NeedNextTick = 1 << 3,
 }
+// export namespace Anim {
+// }

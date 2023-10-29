@@ -4,7 +4,7 @@ import { randomHex } from 'utils'
 import { Context } from '../src/context.ts'
 import { Point } from '../src/point.ts'
 import { Rect } from '../src/rect.ts'
-import { Renderable } from '../src/renderable.ts'
+import { Need, Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 
 export class Box extends Scene {
@@ -25,19 +25,25 @@ export class Box extends Scene {
 }
 
 class BoxRenderable extends Renderable {
-  need = Renderable.Need.Render
+  need = Need.Render
   @fn render(c: CanvasRenderingContext2D) {
     const { rect } = this
     c.save()
     rect.pos.translateNegative(c)
     rect.fill(c)
     c.restore()
-    this.need ^= Renderable.Need.Render
+    this.need ^= Need.Render
   }
-  @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
+  draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { canvas, rect, pr } = this
     // rect.round().stroke(c, this.rect.fillColor) //
     rect.round()
-    .drawImageTranslated(canvas.el, c, pr, true, scroll)
+      .drawImageTranslated(
+        canvas.el,
+        c,
+        pr,
+        true,
+        scroll
+      )
   }
 }

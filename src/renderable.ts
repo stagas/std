@@ -25,7 +25,7 @@ export abstract class Renderable {
   didDraw?: boolean
 
   // need
-  need = Renderable.Need.Idle
+  need = Need.Idle
 
   // features
   canDirectDraw?: boolean
@@ -43,7 +43,7 @@ export abstract class Renderable {
     const { pr, canvas } = of(this)
     const { rect: { size: { x, y } } } = of(canvas)
     $()
-    this.need |= Renderable.Need.Init
+    this.need |= Need.Init
   }
 }
 
@@ -52,10 +52,10 @@ export namespace Renderable {
     renderables?: Renderable.It[]
     renderable?: Renderable
   }
-  export const enum Need {
-    Idle = 0,
-    Init = 1 << 0,
-    Render = 1 << 1,
-    Draw = 1 << 2,
-  }
+}
+export const enum Need {
+  Idle = 0,
+  Init = 1 << 0,
+  Render = 1 << 1,
+  Draw = 1 << 2,
 }

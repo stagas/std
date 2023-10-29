@@ -1,7 +1,9 @@
 // log.active
 import { ProfileJson } from 'parse-trace'
-import { dom, timeout } from 'utils'
+import { dom, seedRand, timeout } from 'utils'
 import { setup } from './balls.js'
+
+// Math.random = seedRand(666)
 
 const style = document.createElement('style')
 dom.head.append(style)

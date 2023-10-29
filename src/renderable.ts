@@ -32,7 +32,7 @@ export abstract class Renderable {
 
   public init?(c: CanvasRenderingContext2D): void
   public render?(c: CanvasRenderingContext2D, t: number, clear: boolean): void
-  public draw?(c: CanvasRenderingContext2D, t: number): void
+  public draw?(c: CanvasRenderingContext2D, t: number, scroll: Point): void
 
   // @init set_initial_dirtyRects() {
   //   if (!this.dirtyRects.length) {

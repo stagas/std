@@ -34,9 +34,10 @@ class BoxRenderable extends Renderable {
     c.restore()
     this.need ^= Renderable.Need.Render
   }
-  @fn draw(c: CanvasRenderingContext2D) {
+  @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { canvas, rect, pr } = this
     // rect.round().stroke(c, this.rect.fillColor) //
-    rect.round().drawImage(canvas.el, c, pr, true)
+    rect.round()
+    .drawImageTranslated(canvas.el, c, pr, true, scroll)
   }
 }

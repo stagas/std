@@ -69,6 +69,14 @@ export class Rect extends Shape {
     return [x, y, w, h] as const
   }
 
+  @fn setParameters(x: number, y: number, w: number, h: number) {
+    this.x = x
+    this.y = y
+    this.w = w
+    this.h = h
+    return this
+  }
+
   // col = alias(this, 'x')
   // line = alias(this, 'y')
   // lineCol = alias(this, 'pos')
@@ -250,6 +258,11 @@ export class Rect extends Shape {
     }
     return this
   }
+  @fn translateByPos(o: PointLike) {
+    this.x += o.x
+    this.y += o.y
+    return this
+  }
   @fn translateNegative(o: PointLike | number) {
     if (typeof o === 'number') {
       this.x -= o
@@ -352,6 +365,27 @@ export class Rect extends Shape {
     )
     return this
   }
+  drawImageTranslated(
+    canvas: HTMLCanvasElement,
+    c: CanvasRenderingContext2D,
+    pr = 1,
+    normalize = false,
+    pos: PointLike) {
+    const { x, y, w, h } = this
+    let n = !normalize ? 1 : 0
+    c.drawImage(
+      canvas,
+      x * pr * n,
+      y * pr * n,
+      w * pr,
+      h * pr,
+      x + pos.x,
+      y + pos.y,
+      w,
+      h
+    )
+    return this
+  }
   drawImageNormalizePos(
     canvas: HTMLCanvasElement,
     c: CanvasRenderingContext2D,
@@ -441,11 +475,12 @@ export class Rect extends Shape {
     const y2 = Math.min(r1.bottom, r2.bottom)
 
     if (x1 < x2 && y1 < y2) {
-      temp.x = x1
-      temp.y = y1
-      temp.w = x2 - x1
-      temp.h = y2 - y1
-      return temp
+      return temp.setParameters(
+        x1,
+        y1,
+        x2 - x1,
+        y2 - y1,
+      )
     }
   }
   @fn zoomLinear(n: number) {

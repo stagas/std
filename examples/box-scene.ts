@@ -36,14 +36,18 @@ export class BoxScene extends Scene {
     const it = this
     let phase = 0
     const pi2 = Math.PI * 2
-    const { ctx: { world: { screen: { viewport }}}  }= it
+    const { ctx: { world: { screen: { viewport } } } } = it
     class BoxSceneAnimatable extends Animatable {
       need = Animatable.Need.Tick
       @fn tick(t: number) {
         let i = 0
         const { center } = viewport
         for (const box of it.boxes) {
-          box.pos.set(center).angleShiftBy((i++ / it.boxes.length) * pi2 - phase, Math.cos(phase) * 400)
+          box.pos.set(center)
+            .angleShiftBy(
+              (i++ / it.boxes.length) * pi2 - phase,
+              Math.cos(phase) * 400
+            )
         }
         return Animatable.Need.Tick
       }

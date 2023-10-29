@@ -29,13 +29,13 @@ export class Render {
       const { renderables: rs, renderable: r } = it
       if (r) {
         if (c && r.scroll) {
-          c.restore()
-          c.save()
-          scroll.add(r.scroll).translate(c)
+          // c.restore()
+          // c.save()
+          scroll.add(r.scroll)//.translate(c)
           if (rs) yield* this.renderables(rs, c)
           yield it as any
-          c.restore()
-          c.save()
+          // c.restore()
+          // c.save()
           scroll.sub(r.scroll)
         }
         else {
@@ -60,16 +60,17 @@ export class Render {
 
     let i = 0
 
-    c.save()
+    // c.save()
 
     for (const { renderable: r } of this.renderables(this.its, c)) {
       let d = dirty.get(r)
       if (d) {
-        c.restore()
+        // c.restore()
         d.rect.clear(c)
         for (let j = 0, other: Dirty; j < i; j++) {
           other = drawn[j]
-          d.rect.intersectionRect(other.rect)
+          d.rect
+            .intersectionRect(other.rect)
             ?.drawImageNormalizePos(
               other.owner.canvas.el,
               c,
@@ -77,8 +78,8 @@ export class Render {
               other.rect
             )
         }
-        c.save()
-        scroll.translate(c)
+        // c.save()
+        // scroll.translate(c)
       }
       // TODO: The 'init' in r 'render' in r etc don't
       // need to be in the hot loop and can be done
@@ -94,22 +95,22 @@ export class Render {
         r.need |= Draw
       }
       if (r.need & Draw) {
-        if ('draw' in r) {
-          r.draw(c, t)
+        if (r.draw) {
+          r.draw(c, t, scroll)
           if (!d) {
             d = {
               owner: r,
-              rect: $(new Rect),
+              rect: $(new Rect(r.rect.size)),
             }
             dirty.set(r, d)
           }
-          d.rect.set(r.rect).translate(scroll)
+          d.rect.setPos(r.rect).translateByPos(scroll)
           drawn[i++] = d
         }
         else r.need ^= Draw
       }
     }
-    c.restore()
+    // c.restore()
 
     // TODO: for the renderables that didn't draw, check if we drew
     // over their previous dirty rects and repeat the draws

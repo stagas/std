@@ -11,7 +11,7 @@ import { Gravity } from './gravity.ts'
 import { Motion } from './motion.ts'
 import { Walls } from './walls.ts'
 
-const BALL_COUNT = 80 //150
+const BALL_COUNT = 50 //150
 const BALL_TOLERANCE = 5
 const BALL_HOLD_TOLERANCE = 8
 const GRID_CELL_BITS = 2

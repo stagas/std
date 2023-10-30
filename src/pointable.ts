@@ -3,7 +3,7 @@ import { Point } from './point.ts'
 import { Mouse } from './mouse.ts'
 import { Renderable } from './renderable.ts'
 
-export class Pointable {
+export abstract class Pointable {
   constructor(
     public it: Pointable.It,
     public downCount = it.ctx.world.input.mouse.$.downCount,
@@ -22,13 +22,14 @@ export class Pointable {
   ) { }
 
   // settable by It
-  hitArea?: { isPointWithin(p: Point): boolean }
+  abstract hitArea?: { isPointWithin(p: Point): boolean }
   canHover = true
   cursor = 'default'
   getItAtPoint(p: Point): Pointable.It | false | undefined {
     return this.hitArea?.isPointWithin(p) && this.it
   }
-  onMouseEvent?(kind: Mouse.EventKind): true | undefined | void { }
+
+  public onMouseEvent?(kind: Mouse.EventKind): true | undefined | void
 
   // internal
   isDown = false

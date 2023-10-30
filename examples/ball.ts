@@ -55,10 +55,16 @@ class BallRenderable extends Renderable {
     c.restore()
     this.need ^= Need.Render
   }
-  draw(c: CanvasRenderingContext2D, t: number) {
+  @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { it, canvas, rect, pr } = of(this)
     it.circle.lerpPos.lerp(t)
-    rect.center.set(it.circle.lerpPos.lerpPoint.round())
-    rect.round().drawImage(canvas.el, c, pr, true)
+    rect.center.set(it.circle.lerpPos.lerpPoint)
+    rect.round().drawImageTranslated(
+      canvas.el,
+      c,
+      pr,
+      true,
+      scroll
+    )
   }
 }

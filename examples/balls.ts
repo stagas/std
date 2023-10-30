@@ -1,6 +1,7 @@
 // log.active
 import { $, fn, init } from 'signal'
 import { dom } from 'utils'
+import { Mouse } from '../src/mouse.ts'
 import { Point } from '../src/point.ts'
 import { Pointable } from '../src/pointable.ts'
 import { Need, Renderable } from '../src/renderable.ts'
@@ -24,6 +25,7 @@ class Balls extends Scene {
   get renderable() {
     $()
     class BallsRenderable extends Renderable {
+      scroll = $(new Point)
       @init init_Balls() {
         this.canvas.fullWindow = true
       }
@@ -34,12 +36,21 @@ class Balls extends Scene {
     }
     return $(new BallsRenderable(this.ctx))
   }
-  get pointables() {
-    return [this.boxes1]
-  }
   get pointable() {
     $()
-    return $(new Pointable(this))
+    const it = this
+    const p = $(new Point)
+    class BallsPointable extends Pointable {
+      hitArea = it.renderable.rect
+      public onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
+        switch (kind) {
+          case Mouse.EventKind.Wheel:
+            it.renderable.scroll.add(p.set(this.mouse.wheel).mul(0.2))
+            break
+        }
+      }
+    }
+    return $(new BallsPointable(this))
   }
 }
 
@@ -59,13 +70,13 @@ export function setup() {
     return function start() {
 
       const { center } = world.screen.viewport
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 15; i++) {
         balls.boxes1.boxes.push($(new Box(ctx,
           $(new Point().set(center)
             .angleShiftBy((i / 20) * pi2, 200))
         )))
       }
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 15; i++) {
         balls.boxes2.boxes.push($(new Box(ctx,
           $(new Point().set(center)
             .angleShiftBy((i / 20) * pi2, 300))

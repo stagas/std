@@ -24,15 +24,38 @@ export class Box extends Scene {
   }
 }
 
+const pi2 = Math.PI * 2
 class BoxRenderable extends Renderable {
+  canDirectDraw = true
   need = Need.Render
+  phase = 0
+  speed = Math.random() * 0.5
+  @fn init(c: CanvasRenderingContext2D) {
+    c.imageSmoothingEnabled = false
+    c.lineWidth = 1.5 / this.pr
+    c.strokeStyle = '#fff'
+    this.need ^= Need.Init
+  }
   @fn render(c: CanvasRenderingContext2D) {
-    const { rect } = this
+    let { rect, phase, speed } = this
     c.save()
     rect.pos.translateNegative(c)
     rect.fill(c)
     c.restore()
-    this.need ^= Need.Render
+    c.save()
+    c.beginPath()
+    const { w, hh } = rect
+    c.translate(0, hh)
+    c.moveTo(0, hh)
+    for (let x = 1; x < w; x+=6) {
+      c.lineTo(x, hh * Math.sin(phase))
+      // console.log(x, hh * Math.sin(phase))
+      phase += speed
+    }
+    c.stroke()
+    c.restore()
+    this.phase = phase % pi2
+    // this.need ^= Need.Render
   }
   draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { canvas, rect, pr } = this

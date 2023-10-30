@@ -34,11 +34,6 @@ export abstract class Renderable {
   public render?(c: CanvasRenderingContext2D, t: number, clear: boolean): void
   public draw?(c: CanvasRenderingContext2D, t: number, scroll: Point): void
 
-  // @init set_initial_dirtyRects() {
-  //   if (!this.dirtyRects.length) {
-  //     this.dirtyRects.push(this.viewRect ?? this.rect)
-  //   }
-  // }
   @fx trigger_need_Init_on_size() {
     const { pr, canvas } = of(this)
     const { rect: { size: { x, y } } } = of(canvas)
@@ -53,6 +48,7 @@ export namespace Renderable {
     renderable?: Renderable
   }
 }
+
 export const enum Need {
   Idle = 0,
   Init = 1 << 0,

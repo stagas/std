@@ -1,10 +1,10 @@
 // log.active
 import { $, fn } from 'signal'
 import { clamp, maybePush, maybeSplice } from 'utils'
-import { Animatable, AnimatableNeed } from './animatable.ts'
+import { Animable, AnimableNeed } from './animable.ts'
 
 export class Anim {
-  its: Animatable.It[] = []
+  its: Animable.It[] = []
   state = AnimState.Idle
 
   tickTime = 0
@@ -54,11 +54,11 @@ export class Anim {
     if (acc > timeStep) {
       acc -= timeStep
       let res: number
-      for (const { animatable: a } of its) {
-        if (a.need & AnimatableNeed.Tick) {
+      for (const { animable: a } of its) {
+        if (a.need & AnimableNeed.Tick) {
           a.coeff = coeff
           res = a.tick?.(dt)!
-          if (res & AnimatableNeed.Tick) {
+          if (res & AnimableNeed.Tick) {
             state |= AnimState.NeedNextTick
             a.tickOne(dt)
           }
@@ -68,16 +68,16 @@ export class Anim {
 
     while (acc > timeStep) {
       acc -= timeStep
-      for (const { animatable: a } of its) {
-        a.need & AnimatableNeed.Tick && (state |= a.tick?.(dt)!)
+      for (const { animable: a } of its) {
+        a.need & AnimableNeed.Tick && (state |= a.tick?.(dt)!)
       }
     }
 
     const t = clamp(0, 1, (this.acc = acc) / timeStep)
 
-    for (const { animatable: a } of its) {
-      a.need & AnimatableNeed.Init && a.init?.()
-      a.need & AnimatableNeed.Draw && a.draw?.(t)
+    for (const { animable: a } of its) {
+      a.need & AnimableNeed.Init && a.init?.()
+      a.need & AnimableNeed.Draw && a.draw?.(t)
     }
 
     if (state & AnimState.NeedNextTick) {
@@ -93,11 +93,11 @@ export class Anim {
       requestAnimationFrame(this.tick)
     }
   }
-  @fn add(it: Animatable.It) {
+  @fn add(it: Animable.It) {
     maybePush(this.its, it)
     return this
   }
-  @fn remove(it: Animatable.It) {
+  @fn remove(it: Animable.It) {
     maybeSplice(this.its, it)
     return this
   }

@@ -1,7 +1,7 @@
 // log.active
 import { $, fn, fx, nu, of, when } from 'signal'
 import { array, on, randomHex } from 'utils'
-import { Animatable, AnimatableNeed } from '../src/animatable.ts'
+import { Animable, AnimableNeed } from '../src/animable.ts'
 import { Circle } from '../src/circle.ts'
 import { Point, byX, byY } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
@@ -13,17 +13,15 @@ import { Walls } from './walls.ts'
 import { Mouseable } from '../src/mouseable.ts'
 import { Mouse } from '../src/mouse.ts'
 
-const BALL_COUNT = 80 //150
 const BALL_TOLERANCE = 5
-const BALL_HOLD_TOLERANCE = 8
-const GRID_CELL_BITS = 2
 
 const p = $(new Point)
 const cp = $(new Point)
 const cv = $(new Point)
 
-export class BallScene extends Scene {
-  get coeff() { return this.animatable.coeff }
+export class BallScene extends Scene
+  implements Renderable.It, Mouseable.It, Animable.It {
+  get coeff() { return this.animable.coeff }
 
   gravity = $(new Gravity)
   motion = $(new Motion)
@@ -36,6 +34,7 @@ export class BallScene extends Scene {
     return $(new Walls(rect))
   }
 
+  count?: number
   balls: $<Ball>[] = []
   x_sorted: $<Ball>[] = []
   y_sorted: $<Ball>[] = []
@@ -49,11 +48,11 @@ export class BallScene extends Scene {
     }
   }
   @fx createBalls() {
-    const { ctx, renderable: r } = of(this)
+    const { count, ctx, renderable: r } = when(this)
     const { canvas } = r
     const { hasSize } = when(canvas.rect)
     $()
-    this.balls = array(BALL_COUNT, () =>
+    this.balls = array(count, () =>
       $(new Ball(ctx), this.ballProps()))
   }
   @fx update_xy_sorted() {
@@ -83,7 +82,13 @@ export class BallScene extends Scene {
       ball.coeff = coeff
     })
   }
-
+  @fn reset() {
+    const { balls, renderable: r } = of(this)
+    const { canvas } = r
+    balls.forEach(ball => {
+      ball.pos.rand(canvas.rect.size)
+    })
+  }
   get mouseable() {
     $()
     const it = this
@@ -111,20 +116,10 @@ export class BallScene extends Scene {
     }
     return $(new BallSceneMouseable(this))
   }
-
-  @fn reset() {
-    const { balls, renderable: r } = of(this)
-    const { canvas } = r
-    balls.forEach(ball => {
-      ball.pos.rand(canvas.rect.size)
-    })
-  }
-
   @nu get renderables(): Renderable.It[] {
     const { balls } = of(this)
     return balls
   }
-
   get renderable() {
     $()
     class BallsSceneRenderable extends Renderable {
@@ -144,16 +139,15 @@ export class BallScene extends Scene {
       this.ctx.world.canvas!
     ))
   }
-
-  get animatable() {
+  get animable() {
     $()
-    return $(new BallSceneAnimatable(this))
+    return $(new BallSceneAnimable(this))
   }
 }
 
-class BallSceneAnimatable extends Animatable {
+class BallSceneAnimable extends Animable {
   constructor(public it: BallScene) { super() }
-  need = AnimatableNeed.Tick
+  need = AnimableNeed.Tick
   @fn tick() {
     const { gravity, motion, walls, balls } = this.it
 
@@ -163,13 +157,13 @@ class BallSceneAnimatable extends Animatable {
       if (walls.update(ball)) continue
       gravity.update(ball)
       motion.update(ball)
-      need |= AnimatableNeed.Tick
+      need |= AnimableNeed.Tick
     }
-    if (performance.now() - this.it.ctx.world.pointer.event.timeStamp < 2000) {
+    if (performance.now() - this.it.ctx.world.pointer!.event.timeStamp < 2000) {
       balls[0].pos.set(cp)
     }
-    if (!need) this.need ^= AnimatableNeed.Draw
-    else this.need = AnimatableNeed.Tick | AnimatableNeed.Draw
+    if (!need) this.need ^= AnimableNeed.Draw
+    else this.need = AnimableNeed.Tick | AnimableNeed.Draw
 
     return need
   }
@@ -226,7 +220,7 @@ class BallSceneAnimatable extends Animatable {
       }
     }
 
-    if (anim.now - pointer.event.timeStamp < 2000) {
+    if (anim.now - pointer!.event.timeStamp < 2000) {
       balls[0].pos.set(cp)
     }
 

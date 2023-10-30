@@ -1,4 +1,4 @@
-import { $, nu, of } from 'signal'
+import { $, fx, nu, of } from 'signal'
 import { Anim } from './anim.ts'
 import { Canvas } from './canvas.ts'
 import { Context } from './context.ts'
@@ -9,6 +9,7 @@ import { Render } from './render.ts'
 import { Renderable } from './renderable.ts'
 import { Screen } from './screen.ts'
 import { Skin } from './skin.ts'
+import { Keyboard } from './keyboard.ts'
 
 export class World {
   it?: World.It
@@ -17,14 +18,14 @@ export class World {
   anim = $(new Anim)
   render = $(new Render(this))
   canvas?: $<Canvas>
-  get pointer() {
-    return $(new Pointer(this))
-  }
-  @nu get input() {
+  pointer?: $<Pointer>
+  keyboard?: $<Keyboard>
+  @nu get mouse(): $<Mouse> | undefined {
     const { it } = of(this)
-    return {
-      mouse: $(new Mouse(it))
-    }
+    return $(new Mouse(it))
+  }
+  @fx update_mouse() {
+    const { it, mouse } = of(this)
   }
 }
 

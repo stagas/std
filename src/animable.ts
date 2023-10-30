@@ -1,20 +1,20 @@
 // log.active
 
-export abstract class Animatable {
-  need = AnimatableNeed.Idle
+export abstract class Animable {
+  need = AnimableNeed.Idle
   coeff?: number
   public init?(): void
-  public tick?(dt: number): AnimatableNeed
+  public tick?(dt: number): AnimableNeed
   public tickOne(dt: number): void { }
   public draw?(t: number): void
 }
 
-export namespace Animatable {
+export namespace Animable {
   export interface It {
-    animatable: Animatable
+    animable: Animable
   }
 }
-export const enum AnimatableNeed {
+export const enum AnimableNeed {
   Idle = 0,
   Init = 1 << 0,
   Tick = 1 << 1,

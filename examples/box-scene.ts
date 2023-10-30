@@ -1,21 +1,20 @@
 // log.active
-import { $, fn, nu, of } from 'signal'
-import { Animatable, AnimatableNeed } from '../src/animatable.ts'
+import { $, fn, of } from 'signal'
+import { Animable, AnimableNeed } from '../src/animable.ts'
 import { Point } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 import { Box } from './box.ts'
 
-export class BoxScene extends Scene {
+export class BoxScene extends Scene
+  implements Renderable.It, Animable.It {
   fixedBoxes: Box[] = []
   boxes: Box[] = []
   speed = 0.04
-
-  @nu get renderables(): Renderable.It[] {
+  get renderables(): Renderable.It[] {
     const { fixedBoxes, boxes } = of(this)
     return [...fixedBoxes, ...boxes]
   }
-
   get renderable() {
     $()
     const it = this
@@ -30,15 +29,14 @@ export class BoxScene extends Scene {
       canvas,
     ))
   }
-
-  get animatable() {
+  get animable() {
     $()
     const it = this
     let phase = 0
     const pi2 = Math.PI * 2
     const { ctx: { world: { screen: { viewport } } } } = it
-    class BoxSceneAnimatable extends Animatable {
-      need = AnimatableNeed.Tick
+    class BoxSceneAnimatable extends Animable {
+      need = AnimableNeed.Tick
       @fn tick(t: number) {
         let i = 0
         const { center } = viewport
@@ -50,7 +48,7 @@ export class BoxScene extends Scene {
             )
             .round()
         }
-        return AnimatableNeed.Tick
+        return AnimableNeed.Tick
       }
       tickOne(dt: number) {
         phase += it.speed

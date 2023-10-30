@@ -1,7 +1,7 @@
 // log.active
 import { $, fn, fx, of } from 'signal'
 import { maybePush, maybeSplice } from 'utils'
-import { Animatable, AnimatableNeed } from './animatable.ts'
+import { Animable, AnimableNeed } from './animable.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Need, Renderable } from './renderable.ts'
@@ -13,7 +13,8 @@ interface Dirty {
   scroll: Point
 }
 
-export class Render {
+export class Render
+  implements Animable.It {
   constructor(public world: World) { }
   dirty = new Map<Renderable, Dirty>()
   drawn: Dirty[] = []
@@ -30,10 +31,10 @@ export class Render {
     maybeSplice(this.its, it)
     return this
   }
-  get animatable() {
+  get animable() {
     $()
     const it = this
-    class RenderAnimatable extends Animatable {
+    class RenderAnimatable extends Animable {
       @fx trigger_draw() {
         let pass = 0
         for (const { renderable: r } of it.traverse(it.its)) {
@@ -41,12 +42,12 @@ export class Render {
         }
         if (pass & (Need.Render | Need.Draw)) {
           $()
-          this.need |= AnimatableNeed.Draw
+          this.need |= AnimableNeed.Draw
         }
       }
       draw(t: number) {
-        it.directDraw(t)
-        // it.draw(t)
+        // it.directDraw(t)
+        it.draw(t)
       }
     }
     return $(new RenderAnimatable)

@@ -1,5 +1,5 @@
 // log.active
-import { $, fx, of } from 'signal'
+import { $, fx, nu, of } from 'signal'
 import { MouseButton } from 'utils'
 import { DOUBLE_CLICK_MS, SINGLE_CLICK_MS } from './constants.ts'
 import { Mouseable } from './mouseable.ts'
@@ -10,8 +10,8 @@ import { Scene } from './scene.ts'
 export class Mouse extends Scene {
   constructor(public it: Mouseable.It) { super(it.ctx) }
 
-  pos = this.ctx.world.pointer.$.pos
-  wheel = this.ctx.world.pointer.$.wheel
+  @nu get pos(): $<Point> | undefined { return of(this.ctx.world).pointer.pos }
+  @nu get wheel(): $<Point> | undefined { return of(this.ctx.world).pointer.wheel }
 
   scroll = $(new Point)
 
@@ -20,6 +20,7 @@ export class Mouse extends Scene {
   downPos = $(new Point)
 
   hoverIt?: Mouseable.It | null
+  focusIt?: Mouseable.It | null | undefined
   downIt?: Mouseable.It | null | undefined
 
   @fx update_it_mouseable_isDown() {
@@ -27,6 +28,7 @@ export class Mouse extends Scene {
     $()
     m.isDown = true
     m.mouse.downPos.set(m.mouse.pos)
+    this.focusIt = this.downIt
     return () => {
       m.isDown = false
     }
@@ -45,7 +47,7 @@ export class Mouse extends Scene {
   }
   *traverseGetItAtPoint(it: Mouseable.It): Generator<Mouseable.It> {
     const { renderable: r, mouseable: m, mouseables: ms } = it
-    const { pos, scroll } = this
+    const { pos, scroll } = of(this)
 
     if (r.scroll) scroll.add(r.scroll)
 
@@ -62,7 +64,8 @@ export class Mouse extends Scene {
     }
   }
   *getItsUnderPointer(it: Mouseable.It) {
-    const { pos, downIt, scroll } = this
+    const { pos, scroll } = of(this)
+    const { downIt } = this
 
     scroll.zero()
 
@@ -85,7 +88,7 @@ export class Mouse extends Scene {
 
     const kind = PointerEventMap[type]
 
-    // log(Mouse.EventKind[kind])
+    log(Mouse.EventKind[kind])
 
     switch (kind) {
       case Down:

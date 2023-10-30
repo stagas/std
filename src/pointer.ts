@@ -1,11 +1,11 @@
 // log.active
 import { $, fn, fx, of } from 'signal'
 import { PointerLikeEvent, dom, on } from 'utils'
-import { Anim, AnimState } from './anim.ts'
+import { AnimState } from './anim.ts'
 import { Point } from './point.ts'
 import { World } from './world.ts'
 
-export enum PointerEventType {
+export const enum PointerEventType {
   Wheel,
   Move,
   Down,
@@ -14,7 +14,7 @@ export enum PointerEventType {
   Menu,
 }
 
-const PointerEventTypeMap: Record<string, PointerEventType> = {
+const EventMap: Record<string, PointerEventType> = {
   wheel: PointerEventType.Wheel,
   mousedown: PointerEventType.Down,
   pointercancel: PointerEventType.Leave,
@@ -29,8 +29,8 @@ export class Pointer {
   constructor(public world: World) { }
 
   @fx init_listeners() {
-    const { world, handler: h } = $.of(this)
-    const { canvas: { el } } = $.of(world)
+    const { world, handler: h } = of(this)
+    const { canvas: { el } } = of(world)
     return [
       on(el, 'wheel', h, { passive: true }),
       on(el, 'mousedown', h),
@@ -62,7 +62,7 @@ export class Pointer {
   })
 
   get type(): PointerEventType {
-    return of(PointerEventTypeMap)[this.event.type]
+    return of(EventMap)[this.event.type]
   }
 
   time = this.event.$.timeStamp
@@ -109,7 +109,7 @@ export class Pointer {
     switch (real.type) {
       case 'wheel':
         event.deltaX = real.deltaX
-        event.deltaY = real.deltaY
+        event.deltaY = -real.deltaY
         break
 
       case 'mousemove':

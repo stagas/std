@@ -18,7 +18,9 @@ export class Render {
   dirty = new Map<Renderable, Dirty>()
   drawn: Dirty[] = []
   check: Dirty[] = []
-  scroll: Point = $(new Point)
+  scroll = $(new Point)
+  view = $(new Rect)
+  $view = $(new Rect)
   its: Renderable.It[] = []
   @fn add(it: Renderable.It) {
     maybePush(this.its, it)
@@ -34,7 +36,7 @@ export class Render {
     class RenderAnimatable extends Animatable {
       @fx trigger_draw() {
         let pass = 0
-        for (const { renderable: r } of it.renderables(it.its)) {
+        for (const { renderable: r } of it.traverse(it.its)) {
           pass |= r.need
         }
         if (pass & (Need.Render | Need.Draw)) {
@@ -49,35 +51,39 @@ export class Render {
     }
     return $(new RenderAnimatable)
   }
-  *renderables(its: Renderable.It[], c?: CanvasRenderingContext2D): Generator<Renderable.It & { renderable: Renderable }> {
+  private *traverse(its: Renderable.It[], c?: CanvasRenderingContext2D): Generator<Renderable.It & { renderable: Renderable }> {
     const { scroll } = this
     for (const it of its) {
       const { renderables: rs, renderable: r } = it
       if (r) {
         if (c && r.scroll) {
           scroll.add(r.scroll)
-          if (rs) yield* this.renderables(rs, c)
+          if (rs) yield* this.traverse(rs, c)
           yield it as any
           scroll.sub(r.scroll)
         }
         else {
-          if (rs) yield* this.renderables(rs, c)
+          if (rs) yield* this.traverse(rs, c)
           yield it as any
         }
       }
       else {
-        if (rs) yield* this.renderables(rs, c)
+        if (rs) yield* this.traverse(rs, c)
       }
     }
   }
   directDraw(t = 1) {
-    const { scroll } = this
+    const { scroll, view, $view } = this
     const { canvas: { c, rect } } = of(this.world)
 
     rect.clear(c)
     scroll.zero()
 
-    for (const { renderable: r } of this.renderables(this.its, c)) {
+    for (const { renderable: r } of this.traverse(this.its, c)) {
+      $view.set(view).translateNegative(scroll)
+      r.isVisible = r.rect.intersectsRect($view)
+      if (!r.isVisible) continue
+
       if (r.need & Need.Init) {
         if (r.init) r.init(r.canvas.c)
         else {
@@ -108,14 +114,18 @@ export class Render {
     }
   }
   draw(t = 1) {
-    const { dirty, drawn, scroll } = this
+    const { dirty, drawn, scroll, view, $view } = this
     const { canvas: { c }, screen: { pr } } = of(this.world)
 
     scroll.zero()
 
     let i = 0
 
-    for (const { renderable: r } of this.renderables(this.its, c)) {
+    for (const { renderable: r } of this.traverse(this.its, c)) {
+      $view.set(view).translateNegative(scroll)
+      r.isVisible = r.rect.intersectsRect($view)
+      if (!r.isVisible) continue
+
       let d = dirty.get(r)
 
       // TODO: The 'init' in r 'render' in r etc don't

@@ -85,7 +85,7 @@ export class Mouse extends Scene {
 
     const kind = PointerEventMap[type]
 
-    log(Mouse.EventKind[kind])
+    // log(Mouse.EventKind[kind])
 
     switch (kind) {
       case Down:

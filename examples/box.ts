@@ -15,7 +15,7 @@ export class Box extends Scene {
     const { pos, ctx: { world } } = this
     const { screen: { viewport } } = of(world)
     const s = Math.random() * 150 + 50
-    const fillColor = '#' + randomHex(3, '444', '477')
+    const fillColor = '#' + randomHex() //3, '444', '477')
     return $(new BoxRenderable(this, $(new Rect(
       $($(new Point).set(s)),
       pos //$($(new Point).rand(viewport))

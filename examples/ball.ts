@@ -4,6 +4,7 @@ import { Circle } from '../src/circle.ts'
 import { Point } from '../src/point.ts'
 import { Need, Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
+import { whenNot } from 'signal/src/signal-core.ts'
 
 export class Ball extends Scene {
   circle = $(new Circle)
@@ -40,13 +41,19 @@ class BallRenderable extends Renderable {
     it.circle.lerpPos.p1.set(it.pos).round()
     it.circle.lerpPos.p2.set(it.pos).round()
   }
+  @fx update_pos_when_not_visible() {
+    const { isVisible } = whenNot(this)
+    const { it } = this
+    const { pos } = it
+    const { x, y } = pos
+    $()
+    this.rect.center.set(pos)
+  }
   @fn init(c: CanvasRenderingContext2D) {
-    // const { Need: { Init } } = Renderable
     c.imageSmoothingEnabled = false
     this.need ^= Need.Init
   }
   @fn render(c: CanvasRenderingContext2D) {
-    // const { Need: { Render } } = Renderable
     const { it } = this
     const { circle } = it
     const { radius: r } = circle

@@ -34,10 +34,10 @@ export class Anim {
 
     state ^= AnimState.NeedNextTick
 
-    // if (dt > maxDeltaTime) {
-    //   //!: discard
-    //   return
-    // }
+    if (dt > maxDeltaTime) {
+      requestAnimationFrame(this.tick)
+      return
+    }
 
     // let needNextTick: boolean | undefined
 

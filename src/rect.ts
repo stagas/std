@@ -493,6 +493,20 @@ export class Rect extends Shape {
       )
     }
   }
+  intersectsRect(other: Rect, threshold = 0.75) {
+    return !(
+      this.bottom - threshold < other.top
+      || this.top + threshold > other.bottom
+      || this.right - threshold < other.left
+      || this.left + threshold > other.right
+    )
+  }
+  withinRect(other: Rect) {
+    return this.left >= other.left
+      && this.right <= other.right
+      && this.top >= other.top
+      && this.bottom <= other.bottom
+  }
   @fn zoomLinear(n: number) {
     const t = -n / 2
     return this.scaleSizeLinear(n).translate({ x: t, y: t })

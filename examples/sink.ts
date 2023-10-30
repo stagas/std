@@ -75,6 +75,7 @@ export function setup() {
     const ctx = { world }
 
     const sink = $(new Sink(ctx))
+    world.render.view = sink.renderable.rect
     world.canvas = sink.renderable.canvas
     world.canvas.appendTo(dom.body)
     world.it = sink

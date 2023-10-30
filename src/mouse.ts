@@ -60,7 +60,6 @@ export class Mouse extends Scene {
     if (item = m.getItAtPoint(m.mouse.pos.set(pos).sub(scroll))) {
       yield item
     }
-
   }
   *getItsUnderPointer(it: Mouseable.It) {
     const { pos, downIt, scroll } = this

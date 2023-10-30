@@ -28,27 +28,6 @@ export class Render {
     maybeSplice(this.its, it)
     return this
   }
-  *renderables(its: Renderable.It[], c?: CanvasRenderingContext2D): Generator<Renderable.It & { renderable: Renderable }> {
-    const { scroll } = this
-    for (const it of its) {
-      const { renderables: rs, renderable: r } = it
-      if (r) {
-        if (c && r.scroll) {
-          scroll.add(r.scroll)
-          if (rs) yield* this.renderables(rs, c)
-          yield it as any
-          scroll.sub(r.scroll)
-        }
-        else {
-          if (rs) yield* this.renderables(rs, c)
-          yield it as any
-        }
-      }
-      else {
-        if (rs) yield* this.renderables(rs, c)
-      }
-    }
-  }
   get animatable() {
     $()
     const it = this
@@ -69,6 +48,27 @@ export class Render {
       }
     }
     return $(new RenderAnimatable)
+  }
+  *renderables(its: Renderable.It[], c?: CanvasRenderingContext2D): Generator<Renderable.It & { renderable: Renderable }> {
+    const { scroll } = this
+    for (const it of its) {
+      const { renderables: rs, renderable: r } = it
+      if (r) {
+        if (c && r.scroll) {
+          scroll.add(r.scroll)
+          if (rs) yield* this.renderables(rs, c)
+          yield it as any
+          scroll.sub(r.scroll)
+        }
+        else {
+          if (rs) yield* this.renderables(rs, c)
+          yield it as any
+        }
+      }
+      else {
+        if (rs) yield* this.renderables(rs, c)
+      }
+    }
   }
   directDraw(t = 1) {
     const { scroll } = this

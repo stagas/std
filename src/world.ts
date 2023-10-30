@@ -3,7 +3,7 @@ import { Anim } from './anim.ts'
 import { Canvas } from './canvas.ts'
 import { Context } from './context.ts'
 import { Mouse } from './mouse.ts'
-import { Pointable } from './pointable.ts'
+import { Mouseable } from './mouseable.ts'
 import { Pointer } from './pointer.ts'
 import { Render } from './render.ts'
 import { Renderable } from './renderable.ts'
@@ -32,6 +32,6 @@ export namespace World {
   export interface It {
     ctx: Context
     renderable: Renderable
-    pointable: Pointable
+    mouseable: Mouseable
   }
 }

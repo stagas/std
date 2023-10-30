@@ -328,6 +328,17 @@ export class Rect extends Shape {
     c.clearRect(x, y, w, h)
     return this
   }
+  path(c: CanvasRenderingContext2D) {
+    const { x, y, w, h } = this
+    c.rect(x, y, w, h)
+    return this
+  }
+  clip(c: CanvasRenderingContext2D) {
+    c.beginPath()
+    this.path(c)
+    c.clip()
+    return this
+  }
   stroke(
     c: CanvasRenderingContext2D,
     color: string = this.strokeColor) {

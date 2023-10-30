@@ -1,7 +1,7 @@
 // log.active
 import { ProfileJson } from 'parse-trace'
 import { dom, seedRand, timeout } from 'utils'
-import { setup } from './balls.js'
+import { setup } from './sink.ts'
 
 Math.random = seedRand(666)
 

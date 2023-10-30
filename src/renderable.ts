@@ -7,6 +7,13 @@ import { Rect } from './rect.ts'
 import { Scene } from './scene.ts'
 
 export abstract class Renderable {
+  static *traverse(its: Renderable.It[]): Generator<Renderable.It> {
+    for (const it of its) {
+      const { renderables: rs, renderable: r } = it
+      if (rs) yield* Renderable.traverse(rs)
+      yield it as any
+    }
+  }
   constructor(
     public ctx: Context,
     public rect = $(new Rect),

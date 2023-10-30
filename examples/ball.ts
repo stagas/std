@@ -32,6 +32,7 @@ export class Ball extends Scene {
 
 class BallRenderable extends Renderable {
   constructor(public it: Ball) { super(it.ctx) }
+  need = Need.Render
   @fx setup() {
     const { it } = this
     const { hasSize } = when(it.circle.rect)
@@ -54,6 +55,7 @@ class BallRenderable extends Renderable {
     circle.fill(c)
     c.restore()
     this.need ^= Need.Render
+    this.need |= Need.Draw
   }
   @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { it, canvas, rect, pr } = of(this)
@@ -66,5 +68,6 @@ class BallRenderable extends Renderable {
       true,
       scroll
     )
+    // console.log('yo')
   }
 }

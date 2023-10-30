@@ -10,8 +10,10 @@ import { Ball } from './ball.ts'
 import { Gravity } from './gravity.ts'
 import { Motion } from './motion.ts'
 import { Walls } from './walls.ts'
+import { Mouseable } from '../src/mouseable.ts'
+import { Mouse } from '../src/mouse.ts'
 
-const BALL_COUNT = 50 //150
+const BALL_COUNT = 80 //150
 const BALL_TOLERANCE = 5
 const BALL_HOLD_TOLERANCE = 8
 const GRID_CELL_BITS = 2
@@ -82,28 +84,33 @@ export class BallScene extends Scene {
     })
   }
 
-  //
-  // Behaviors.
-  //
-
-  @fx onClickAddBall() {
-    return on(window, 'click', () =>
-      this.addBall(this.ctx.world.pointer.pos)
-    )
-  }
-
-  @fx ballFollowsPointer() {
-    const { balls } = of(this)
-    const { pos } = this.ctx.world.pointer
-    const { x, y } = pos
+  get mouseable() {
     $()
-    const [ball] = balls
-    ball.vel.set(cv.set(pos).sub(ball.pos).mul(3))
-    ball.pos.set(pos)
-    // this.animatable.draw(1)
-  }
+    const it = this
+    class BallSceneMouseable extends Mouseable {
+      hitArea = it.renderable.rect
+      public onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
+        const { mouse: { pos } } = of(this)
 
-  // End Behaviors.
+        switch (kind) {
+          case Mouse.EventKind.Move:
+            const { balls } = of(it)
+            const [ball] = balls
+            ball.vel.set(cv.set(pos).sub(ball.pos).mul(3))
+            ball.pos.set(pos)
+            return true
+
+          case Mouse.EventKind.Down:
+            return true
+
+          case Mouse.EventKind.Click:
+            it.addBall(pos)
+            return true
+        }
+      }
+    }
+    return $(new BallSceneMouseable(this))
+  }
 
   @fn reset() {
     const { balls, renderable: r } = of(this)
@@ -121,6 +128,7 @@ export class BallScene extends Scene {
   get renderable() {
     $()
     class BallsSceneRenderable extends Renderable {
+      isVisible = true
       // dirtyRects = []
       // @init init_Balls() {
       //   this.canvas.fullWindow = true

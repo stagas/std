@@ -2,87 +2,87 @@
 import { $, fx, of } from 'signal'
 import { MouseButton } from 'utils'
 import { DOUBLE_CLICK_MS, SINGLE_CLICK_MS } from './constants.ts'
+import { Mouseable } from './mouseable.ts'
 import { Point } from './point.ts'
-import { Pointable } from './pointable.ts'
 import { PointerEventType } from './pointer.ts'
 import { Scene } from './scene.ts'
 
 export class Mouse extends Scene {
-  constructor(public it: Pointable.It) { super(it.ctx) }
+  constructor(public it: Mouseable.It) { super(it.ctx) }
+
   pos = this.ctx.world.pointer.$.pos
   wheel = this.ctx.world.pointer.$.wheel
-  // linecol = $(new Linecol)
+
+  scroll = $(new Point)
 
   downCount = 0
   downTime = 0
   downPos = $(new Point)
 
-  hoverIt?: Pointable.It | null
-  downIt?: Pointable.It | null | undefined
+  hoverIt?: Mouseable.It | null
+  downIt?: Mouseable.It | null | undefined
 
-  // _innerPos = $(new Point)
-  // get innerPos() {
-  //   const { ctx: { misc, renderable: { pr, prRecip } } } = of(this)
-  //   const { innerMatrix: m } = of(misc)
-  //   const { a, b, c, d, e, f } = m
-  //   const { pos } = of(this)
-  //   const { x, y } = of(pos)
-  //   $()
-  //   this._innerPos.set(pos).normalizeMatrixPr(m, pr, prRecip).round()
-  //   return this._innerPos
-  // }
-  @fx update_it_pointable_isDown() {
-    const { downIt } = of(this)
+  @fx update_it_mouseable_isDown() {
+    const { downIt: { mouseable: m } } = of(this)
     $()
-    downIt.pointable.isDown = true
+    m.isDown = true
+    m.mouse.downPos.set(m.mouse.pos)
     return () => {
-      downIt.pointable.isDown = false
+      m.isDown = false
     }
   }
-  @fx update_it_pointable_isHovering() {
-    const { hoverIt } = of(this)
+  @fx update_it_mouseable_isHovering() {
+    const { hoverIt: { mouseable: m } } = of(this)
     $()
     const { ctx: { world } } = of(this)
-    hoverIt.pointable.isHovering = true
-    hoverIt.pointable.onMouseEvent?.(Enter)
-    world.screen.cursor = hoverIt.pointable.cursor
+    m.isHovering = true
+    m.onMouseEvent?.(Enter)
+    world.screen.cursor = m.cursor
     return () => {
-      hoverIt.pointable.isHovering = false
-      hoverIt.pointable.onMouseEvent?.(Leave)
+      m.isHovering = false
+      m.onMouseEvent?.(Leave)
     }
   }
-  *traverseGetItAtPoint(it: Pointable.It): Generator<Pointable.It> {
-    let item: Pointable.It | false | undefined
+  *traverseGetItAtPoint(it: Mouseable.It): Generator<Mouseable.It> {
+    const { renderable: r, mouseable: m, mouseables: ms } = it
+    const { pos, scroll } = this
 
-    if (item = it.pointable.getItAtPoint(it.pointable.mouse.pos)) {
+    if (r.scroll) scroll.add(r.scroll)
+
+    if (ms) for (const curr of ms) {
+      if (!curr.mouseable.it.renderable.isVisible) continue
+      yield* this.traverseGetItAtPoint(curr)
+    }
+
+    if (r.scroll) scroll.sub(r.scroll)
+
+    let item: Mouseable.It | false | undefined
+    if (item = m.getItAtPoint(m.mouse.pos.set(pos).sub(scroll))) {
       yield item
     }
 
-    if ('pointables' in it) {
-      for (const curr of it.pointables) {
-        if (!curr.pointable.it.renderable.isVisible) continue
-
-        yield* this.traverseGetItAtPoint(curr)
-      }
-    }
   }
-  *getItsUnderPointer(it: Pointable.It) {
-    const { downIt } = this
+  *getItsUnderPointer(it: Mouseable.It) {
+    const { pos, downIt, scroll } = this
+
+    scroll.zero()
 
     // the down It is always the first under the pointer.
-    if (downIt) yield downIt
+    if (downIt) {
+      downIt.mouseable.mouse.pos.set(pos)
+      yield downIt
+    }
 
     yield* this.traverseGetItAtPoint(it)
   }
   @fx handle_pointer_event() {
     const { it, ctx } = of(this)
     const { world } = of(ctx)
-    // const { charWidth } = of(dims)
     const { pointer } = of(world)
     const { time, real } = of(pointer)
     $()
     const { type } = pointer
-    const { pos, downIt, hoverIt } = this
+    const { downIt } = this
 
     const kind = PointerEventMap[type]
 
@@ -123,7 +123,9 @@ export class Mouse extends Scene {
     let i = 0
     const its = this.getItsUnderPointer(it)
     for (const it of its) {
-      if (it.pointable.canHover) {
+      const { mouseable: m } = it
+
+      if (m.canHover) {
         if (!i++ && this.hoverIt !== it) {
           this.hoverIt = it
         }
@@ -136,7 +138,7 @@ export class Mouse extends Scene {
       //     }
       // }
 
-      if (it.pointable.onMouseEvent?.(kind)) {
+      if (m.onMouseEvent?.(kind)) {
         switch (kind) {
           case Down:
             this.downIt = it
@@ -148,7 +150,7 @@ export class Mouse extends Scene {
         switch (kind) {
           case Up:
             if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
-              it.pointable.onMouseEvent?.(Click)
+              m.onMouseEvent?.(Click)
               return
             }
             break

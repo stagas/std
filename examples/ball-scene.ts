@@ -1,8 +1,12 @@
 // log.active
 import { $, fn, fx, nu, of, when } from 'signal'
-import { array, on, randomHex } from 'utils'
+import { array, randomHex } from 'utils'
 import { Animable, AnimableNeed } from '../src/animable.ts'
 import { Circle } from '../src/circle.ts'
+import { Keyboard } from '../src/keyboard.ts'
+import { Keyboardable } from '../src/keyboardable.ts'
+import { Mouse } from '../src/mouse.ts'
+import { Mouseable } from '../src/mouseable.ts'
 import { Point, byX, byY } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
@@ -10,8 +14,6 @@ import { Ball } from './ball.ts'
 import { Gravity } from './gravity.ts'
 import { Motion } from './motion.ts'
 import { Walls } from './walls.ts'
-import { Mouseable } from '../src/mouseable.ts'
-import { Mouse } from '../src/mouse.ts'
 
 const BALL_TOLERANCE = 5
 
@@ -20,7 +22,7 @@ const cp = $(new Point)
 const cv = $(new Point)
 
 export class BallScene extends Scene
-  implements Renderable.It, Mouseable.It, Animable.It {
+  implements Renderable.It, Mouseable.It, Animable.It, Keyboardable.It {
   get coeff() { return this.animable.coeff }
 
   gravity = $(new Gravity)
@@ -94,8 +96,8 @@ export class BallScene extends Scene
     const it = this
     class BallSceneMouseable extends Mouseable {
       hitArea = it.renderable.rect
-      public onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
-        const { mouse: { pos } } = of(this)
+      onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
+        const { pos } = this.mouse
 
         switch (kind) {
           case Mouse.EventKind.Move:
@@ -108,6 +110,10 @@ export class BallScene extends Scene
           case Mouse.EventKind.Down:
             return true
 
+          case Mouse.EventKind.Up:
+            it.ctx.world.keyboard?.textarea.focus()
+            return true
+
           case Mouse.EventKind.Click:
             it.addBall(pos)
             return true
@@ -115,6 +121,47 @@ export class BallScene extends Scene
       }
     }
     return $(new BallSceneMouseable(this))
+  }
+  get keyboardable() {
+    $()
+    const it = this
+    const { Down, Up, Copy, Cut, Paste } = Keyboard.EventKind
+    const { Char, Special } = Keyboard.KeyKind
+    class BallSceneKeyboardable extends Keyboardable {
+      onKeyboardEvent(kind: Keyboard.EventKind): true | void | undefined {
+        const { key, char, special, alt, ctrl, shift } = this.kbd
+
+        switch (kind) {
+          case Down:
+            if (ctrl && shift && char === 'J') {
+              console.log('HO HO HO')
+              return true
+            }
+            break
+
+          case Up:
+            switch (key?.kind) {
+              case Char:
+                this.kbd.textarea.value = ''
+                return true
+            }
+            break
+
+          case Copy:
+            console.log('COPY')
+            return true
+
+          case Cut:
+            console.log('CUT')
+            return true
+
+          case Paste:
+            console.log('PASTE')
+            return true
+        }
+      }
+    }
+    return $(new BallSceneKeyboardable(it))
   }
   @nu get renderables(): Renderable.It[] {
     const { balls } = of(this)

@@ -1,7 +1,8 @@
 // log.active
-import { $, fn, init } from 'signal'
+import { $, fn, init, of } from 'signal'
 import { dom } from 'utils'
 import { Keyboard } from '../src/keyboard.ts'
+import { Keyboardable } from '../src/keyboardable.ts'
 import { Mouse } from '../src/mouse.ts'
 import { Mouseable } from '../src/mouseable.ts'
 import { Point } from '../src/point.ts'
@@ -53,17 +54,17 @@ export class Sink extends Scene
     $()
     const it = this
     const p = $(new Point)
-    class BallsMouseable extends Mouseable {
+    class SinkMouseable extends Mouseable {
       hitArea = it.renderable.rect
       onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
         switch (kind) {
           case Mouse.EventKind.Wheel:
             it.renderable.scroll.add(p.set(this.mouse.wheel).mul(0.2)).round()
-            break
+            return true
         }
       }
     }
-    return $(new BallsMouseable(this))
+    return $(new SinkMouseable(this))
   }
 }
 
@@ -73,8 +74,8 @@ export function setup() {
   return $.batch(() => {
     const world = $(new World)
     world.pointer = $(new Pointer(world))
-    // world.keyboard = $(new Keyboard(world))
-    // world.keyboard.appendTo(dom.body)
+    world.keyboard = $(new Keyboard(world))
+    world.keyboard.appendTo(dom.body)
 
     const ctx = { world }
 
@@ -84,6 +85,10 @@ export function setup() {
     world.canvas.appendTo(dom.body)
 
     world.it = sink
+
+    setTimeout(() => {
+      world.keyboard!.textarea.focus()
+    }, 50)
 
     return function start() {
       const { center } = world.screen.viewport

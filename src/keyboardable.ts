@@ -4,10 +4,10 @@ import { Mouseable } from './mouseable.ts'
 export abstract class Keyboardable {
   constructor(
     public it: Keyboardable.It,
-    public keys = it.ctx.world.keyboard!.keys
+    public kbd = it.ctx.world.keyboard!,
   ) { }
   isFocused = false
-  public onKeyboardEvent?(kind: Keyboard.EventKind): true | undefined | void
+  public onKeyboardEvent?(kind: Keyboard.EventKind): true | string | undefined | void
 }
 
 export namespace Keyboardable {

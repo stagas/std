@@ -1,5 +1,5 @@
-import { $, fn, fx, init, of, when } from 'signal'
-import { dom, maybeSpliceFind, on, prevent } from 'utils'
+import { $, fn, fx, of, when } from 'signal'
+import { dom, maybeSpliceFind, on } from 'utils'
 import { Keyboardable } from './keyboardable.ts'
 import { Rect } from './rect.ts'
 import { World } from './world.ts'
@@ -7,9 +7,23 @@ import { World } from './world.ts'
 export class Keyboard {
   constructor(public world: World) { }
 
-  keys: Keyboard.Key[] = []
   focusIt?: Keyboardable.It
   isFocused = false
+
+  real?: KeyboardEvent
+  clip?: ClipboardEvent
+  pasted = ''
+  keys: Keyboard.Key[] = []
+  key?: Keyboard.Key | undefined
+  char = ''
+  special: (
+    Keyboard.Key & {
+      kind: Keyboard.KeyKind.Special
+    })['value'] | '' = ''
+  alt?: boolean | undefined
+  ctrl?: boolean | undefined
+  shift?: boolean | undefined
+  time: number = 0
 
   style?: CSSStyleDeclaration
 
@@ -21,12 +35,12 @@ export class Keyboard {
   @fx init_listeners() {
     const { textarea: t } = this
     return [
-      on(t, 'contextmenu', prevent.stop),
+      on(t, 'contextmenu', dom.prevent.stop),
       on(t, 'keydown', this.handleKey),
       on(t, 'keyup', this.handleKey),
-      on(t, 'copy', this.handleCopy),
-      on(t, 'cut', this.handleCut),
-      on(t, 'paste', this.handlePaste),
+      on(t, 'copy', this.handleClip(Keyboard.EventKind.Copy)),
+      on(t, 'cut', this.handleClip(Keyboard.EventKind.Cut)),
+      on(t, 'paste', this.handleClip(Keyboard.EventKind.Paste)),
       on(t, 'blur', () => { this.isFocused = false }),
       on(t, 'focus', () => { this.isFocused = true }),
     ]
@@ -61,55 +75,88 @@ export class Keyboard {
       k.isFocused = false
     }
   }
-  @fn handleKey = (e: KeyboardEvent) => {
-    const { keys } = this
-    const real = e
-    const time = real.timeStamp
+  @fn handleKey =
+    (e: KeyboardEvent) => {
+      const { keys } = this
+      const real = e
+      const time = real.timeStamp
 
-    let kind: Keyboard.EventKind = EventMap[real.type]
-    if (kind == null) return
+      let kind: Keyboard.EventKind = EventMap[real.type]
+      if (kind == null) {
+        throw new TypeError('Not implemented keyboard event: ' + real.type)
+        return
+      }
 
-    const { Down, Up } = Keyboard.EventKind
+      const { Down, Up } = Keyboard.EventKind
 
-    switch (kind) {
-      case Down:
-        if (real.key.length === 1) {
-          keys.push({
-            kind: Keyboard.KeyKind.Char,
-            value: real.key,
-            real,
-            time
-          })
-        }
-        else {
-          keys.push({
-            kind: Keyboard.KeyKind.Special,
-            value: real.key as any,
-            real,
-            time
-          })
-        }
-        break
+      let key: Keyboard.Key | undefined
+      let char = ''
+      let special = ''
 
-      case Up:
-        maybeSpliceFind(
-          keys,
-          key => key.value === real.key
-        )
-        break
+      switch (kind) {
+        case Down:
+          if (real.key.length === 1) {
+            keys.push(key = {
+              kind: Keyboard.KeyKind.Char,
+              value: char = real.key,
+              real,
+              time
+            })
+          }
+          else {
+            keys.push(key = {
+              kind: Keyboard.KeyKind.Special,
+              value: special = real.key as any,
+              real,
+              time
+            })
+          }
+          break
+
+        case Up:
+          key = maybeSpliceFind(
+            keys,
+            key => key.value === real.key
+          )
+          break
+      }
+
+      this.real = real
+      this.time = time
+      this.key = key
+      this.char = char
+      this.special = special as any
+      this.alt = real.altKey || void 0
+      this.ctrl = (real.ctrlKey || real.metaKey) || void 0
+      this.shift = real.shiftKey || void 0
+
+      if (this.focusIt?.keyboardable.onKeyboardEvent?.(kind)) {
+        dom.prevent(real)
+      }
     }
+  @fn handleClip =
+    (kind: Keyboard.EventKind) =>
+      (e: ClipboardEvent) => {
+        this.clip = e
 
-    this.focusIt?.keyboardable.onKeyboardEvent?.(kind)
-  }
-  @fn handleCopy = (e: ClipboardEvent) => {
+        if (kind === Keyboard.EventKind.Paste) {
+          this.pasted = e.clipboardData?.getData('text') ?? ''
+        }
 
-  }
-  @fn handleCut = (e: ClipboardEvent) => {
+        const res = this.focusIt
+          ?.keyboardable
+          .onKeyboardEvent?.(kind)
 
-  }
-  @fn handlePaste = (e: ClipboardEvent) => {
-
-  }
+        if (res != null) {
+          if (typeof res === 'string') {
+            this.textarea.value = res
+            this.textarea.select()
+          }
+          else {
+            dom.prevent(e)
+          }
+        }
+      }
   textareaRect = $(new Rect, { w: 50, h: 50 })
   textarea: HTMLTextAreaElement = dom.el('textarea', {
     spellcheck: false,

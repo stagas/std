@@ -10,8 +10,7 @@ import { Scene } from './scene.ts'
 export class Mouse extends Scene {
   constructor(public it: Mouseable.It) { super(it.ctx) }
 
-  @nu get pos(): $<Point> | undefined { return of(this.ctx.world).pointer.pos }
-  @nu get wheel(): $<Point> | undefined { return of(this.ctx.world).pointer.wheel }
+  get pointer() { return this.ctx.world.pointer }
 
   scroll = $(new Point)
 
@@ -46,12 +45,12 @@ export class Mouse extends Scene {
     }
   }
   *traverseGetItAtPoint(it: Mouseable.It): Generator<Mouseable.It> {
-    const { renderable: r, mouseable: m, mouseables: ms } = it
-    const { pos, scroll } = of(this)
+    const { renderable: r, mouseable: m } = it
+    const { pointer: { pos }, scroll } = of(this)
 
     if (r.scroll) scroll.add(r.scroll)
 
-    if (ms) for (const curr of ms) {
+    if (m.its) for (const curr of m.its) {
       if (!curr.mouseable.it.renderable.isVisible) continue
       yield* this.traverseGetItAtPoint(curr)
     }
@@ -64,7 +63,7 @@ export class Mouse extends Scene {
     }
   }
   *getItsUnderPointer(it: Mouseable.It) {
-    const { pos, scroll } = of(this)
+    const { pointer: { pos }, scroll } = of(this)
     const { downIt } = this
 
     scroll.zero()
@@ -78,9 +77,7 @@ export class Mouse extends Scene {
     yield* this.traverseGetItAtPoint(it)
   }
   @fx handle_pointer_event() {
-    const { it, ctx } = of(this)
-    const { world } = of(ctx)
-    const { pointer } = of(world)
+    const { it, ctx, pointer } = of(this)
     const { time, real } = of(pointer)
     $()
     const { type } = pointer
@@ -140,24 +137,27 @@ export class Mouse extends Scene {
       //     }
       // }
 
+      let handled: boolean | undefined
+
       if (m.onMouseEvent?.(kind)) {
         switch (kind) {
           case Down:
             this.downIt = it
             break
         }
-        return
+        handled = true
       }
-      else {
-        switch (kind) {
-          case Up:
-            if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
-              m.onMouseEvent?.(Click)
-              return
-            }
-            break
-        }
+
+      switch (kind) {
+        case Up:
+          if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
+            m.onMouseEvent?.(Click)
+          }
+          handled = true
+          break
       }
+
+      if (handled) break
     }
   }
 }

@@ -14,8 +14,8 @@ import { Keyboard } from './keyboard.ts'
 export class World {
   it?: World.It
   skin = $(new Skin)
-  screen = $(new Screen)
   anim = $(new Anim)
+  screen = $(new Screen)
   render = $(new Render(this))
   canvas?: $<Canvas>
   pointer?: $<Pointer>

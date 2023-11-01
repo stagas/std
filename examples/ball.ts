@@ -1,10 +1,11 @@
 // log.active
 import { $, fn, fx, of, when } from 'signal'
-import { Circle } from '../src/circle.ts'
-import { Point } from '../src/point.ts'
-import { Need, Renderable } from '../src/renderable.ts'
-import { Scene } from '../src/scene.ts'
 import { whenNot } from 'signal/src/signal-core.ts'
+import { Circle } from '../src/circle.ts'
+import { Need } from '../src/need.ts'
+import { Point } from '../src/point.ts'
+import { Renderable } from '../src/renderable.ts'
+import { Scene } from '../src/scene.ts'
 
 export class Ball extends Scene {
   circle = $(new Circle)
@@ -32,7 +33,7 @@ export class Ball extends Scene {
 }
 
 class BallRenderable extends Renderable {
-  constructor(public it: Ball) { super(it.ctx) }
+  constructor(public it: Ball) { super(it) }
   need = Need.Render
   @fx setup() {
     const { it } = this

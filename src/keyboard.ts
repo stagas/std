@@ -48,7 +48,7 @@ export class Keyboard {
   @fx textarea_follows_mouse() {
     const { style, world } = of(this)
     const { mouse } = of(world)
-    const { pos } = of(mouse)
+    const { pointer: { pos } } = of(mouse)
     const { x, y } = pos
     $()
     this.textareaRect.center.set(pos)
@@ -164,7 +164,7 @@ export class Keyboard {
     style: {
       cssText: /*css*/`
       position: fixed;
-      opacity: 0.6;
+      opacity: 0;
       width: 50px;
       height: 50px;
       pointer-events: none;

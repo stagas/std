@@ -5,28 +5,42 @@ import { Point } from './point.ts'
 import { Renderable } from './renderable.ts'
 
 export abstract class Mouseable {
-  constructor(
-    public it: Mouseable.It,
-    public downCount = of(it.ctx.world).mouse.$.downCount,
-    public downTime = of(it.ctx.world).mouse.$.downTime,
-    public mouse = $({
-      btns: of(it.ctx.world).pointer.$.buttons,
-      wheel: of(it.ctx.world).pointer.$.wheel,
-      pos: $(new Point),
-      downPos: $(new Point)
-    }),
-  ) { }
-
-  abstract hitArea?: { isPointWithin(p: Point): boolean }
   canHover = true
   cursor = 'default'
+
+  constructor(
+    public it: Mouseable.It,
+    public hitArea: Mouseable.HitArea = it.renderable.rect
+  ) { }
 
   isDown = false
   isFocused = false
   isHovering = false
 
+  get its(): Mouseable.It[] | undefined { return }
+
   getItAtPoint(p: Point): Mouseable.It | false | undefined {
     return this.hitArea?.isPointWithin(p) && this.it
+  }
+
+  get mouse() {
+    $()
+    const { mouse: m, pointer: p } = of(this.it.ctx.world)
+    return $({
+      real: p.$.real,
+      alt: p.$.alt,
+      ctrl: p.$.ctrl,
+      shift: p.$.shift,
+      buttons: p.$.buttons,
+      wheel: p.$.wheel,
+      pos: $(new Point),
+      downPos: $(new Point),
+      downCount: m.$.downCount,
+      downTime: m.$.downTime,
+      isDown: $(this).$.isDown,
+      isFocused: $(this).$.isFocused,
+      isHovering: $(this).$.isHovering,
+    })
   }
 
   public onMouseEvent?(kind: Mouse.EventKind): true | undefined | void
@@ -34,9 +48,10 @@ export abstract class Mouseable {
 
 export namespace Mouseable {
   export interface It extends Renderable.It {
-    mouseables?: Mouseable.It[]
     mouseable: Mouseable
     keyboardable?: Keyboardable
-    renderable: Renderable
+  }
+  export interface HitArea {
+    isPointWithin(p: Point): boolean
   }
 }

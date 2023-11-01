@@ -1,12 +1,13 @@
-// log.active
+log.active
 import { $, fn, fx, nu, of, when } from 'signal'
 import { array, randomHex } from 'utils'
-import { Animable, AnimableNeed } from '../src/animable.ts'
+import { Animable } from '../src/animable.ts'
 import { Circle } from '../src/circle.ts'
 import { Keyboard } from '../src/keyboard.ts'
 import { Keyboardable } from '../src/keyboardable.ts'
 import { Mouse } from '../src/mouse.ts'
 import { Mouseable } from '../src/mouseable.ts'
+import { Need } from '../src/need.ts'
 import { Point, byX, byY } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
@@ -23,7 +24,7 @@ const cv = $(new Point)
 
 export class BallScene extends Scene
   implements Renderable.It, Mouseable.It, Animable.It, Keyboardable.It {
-  get coeff() { return this.animable.coeff }
+  get coeff() { return this.ctx.world.anim.coeff }
 
   gravity = $(new Gravity)
   motion = $(new Motion)
@@ -94,33 +95,33 @@ export class BallScene extends Scene
   get mouseable() {
     $()
     const it = this
+    const { Wheel, Down, Up, Move, Click, Enter, Leave, Menu } = Mouse.EventKind
     class BallSceneMouseable extends Mouseable {
-      hitArea = it.renderable.rect
       onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
         const { pos } = this.mouse
 
         switch (kind) {
-          case Mouse.EventKind.Move:
+          case Move:
             const { balls } = of(it)
             const [ball] = balls
             ball.vel.set(cv.set(pos).sub(ball.pos).mul(3))
             ball.pos.set(pos)
             return true
 
-          case Mouse.EventKind.Down:
+          case Down:
             return true
 
-          case Mouse.EventKind.Up:
+          case Up:
             it.ctx.world.keyboard?.textarea.focus()
             return true
 
-          case Mouse.EventKind.Click:
+          case Click:
             it.addBall(pos)
             return true
         }
       }
     }
-    return $(new BallSceneMouseable(this))
+    return $(new BallSceneMouseable(it as Mouseable.It))
   }
   get keyboardable() {
     $()
@@ -161,29 +162,23 @@ export class BallScene extends Scene
         }
       }
     }
-    return $(new BallSceneKeyboardable(it))
+    return $(new BallSceneKeyboardable(it as Keyboardable.It))
   }
-  @nu get renderables(): Renderable.It[] {
-    const { balls } = of(this)
-    return balls
-  }
+
   get renderable() {
     $()
+    const it = this
+    const { canvas } = of(it.ctx.world)
     class BallsSceneRenderable extends Renderable {
-      isVisible = true
-      // dirtyRects = []
-      // @init init_Balls() {
-      //   this.canvas.fullWindow = true
-      // }
-      // @fn init(c: CanvasRenderingContext2D) {
-      //   c.imageSmoothingEnabled = false
-      //   this.need ^= Renderable.Need.Init
-      // }
+      @nu get its() {
+        const { balls } = of(it)
+        return balls
+      }
     }
     return $(new BallsSceneRenderable(
-      this.ctx,
-      this.ctx.world.canvas!.rect,
-      this.ctx.world.canvas!
+      it as Renderable.It,
+      canvas.rect,
+      canvas
     ))
   }
   get animable() {
@@ -194,9 +189,9 @@ export class BallScene extends Scene
 
 class BallSceneAnimable extends Animable {
   constructor(public it: BallScene) { super() }
-  need = AnimableNeed.Tick
+  need = Need.Tick
   @fn tick() {
-    const { gravity, motion, walls, balls } = this.it
+    const { gravity, motion, walls, balls, ctx: { world: { mouse } } } = this.it
 
     let need = 0
     cp.set(balls[0].pos)
@@ -204,22 +199,21 @@ class BallSceneAnimable extends Animable {
       if (walls.update(ball)) continue
       gravity.update(ball)
       motion.update(ball)
-      need |= AnimableNeed.Tick
+      need = Need.Tick
     }
-    if (performance.now() - this.it.ctx.world.pointer!.event.timeStamp < 2000) {
+    if (performance.now() - mouse!.pointer!.time < 2000) {
       balls[0].pos.set(cp)
     }
-    if (!need) this.need ^= AnimableNeed.Draw
-    else this.need = AnimableNeed.Tick | AnimableNeed.Draw
 
-    return need
+    if (!need) this.need ^= Need.Draw
+    else this.need = Need.Tick | Need.Draw
   }
   @fn tickOne() {
     const {
       balls,
       x_sorted: xs,
       y_sorted: ys,
-      ctx: { world: { anim, pointer } }
+      ctx: { world: { anim, mouse } }
     } = this.it
 
     for (const ball of balls) {
@@ -267,7 +261,7 @@ class BallSceneAnimable extends Animable {
       }
     }
 
-    if (anim.now - pointer!.event.timeStamp < 2000) {
+    if (anim.now - mouse!.pointer!.time < 2000) {
       balls[0].pos.set(cp)
     }
 

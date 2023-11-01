@@ -1,13 +1,12 @@
 // log.active
-import { $, fn, init, of } from 'signal'
+import { $, fn, init } from 'signal'
 import { dom } from 'utils'
 import { Keyboard } from '../src/keyboard.ts'
-import { Keyboardable } from '../src/keyboardable.ts'
 import { Mouse } from '../src/mouse.ts'
 import { Mouseable } from '../src/mouseable.ts'
 import { Point } from '../src/point.ts'
 import { Pointer } from '../src/pointer.ts'
-import { Need, Renderable } from '../src/renderable.ts'
+import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 import { World } from '../src/world.ts'
 import { BallScene } from './ball-scene.ts'
@@ -25,37 +24,36 @@ export class Sink extends Scene
   get boxes2() {
     $(); return $(new BoxScene(this.ctx), { speed: 0.012 })
   }
-  get renderables() {
-    return [
-      this.boxes1,
-      this.boxes2,
-      this.balls,
-    ]
-  }
   get renderable() {
     $()
     const it = this
     class BallsRenderable extends Renderable {
       scroll = $(new Point)
+      get its() {
+        return [
+          it.boxes1,
+          it.boxes2,
+          it.balls,
+        ]
+      }
       @init init_Balls() {
         this.canvas.fullWindow = true
       }
       @fn init(c: CanvasRenderingContext2D) {
         c.imageSmoothingEnabled = false
-        this.need ^= Need.Init
+        this.need ^= Renderable.Need.Init
       }
     }
-    return $(new BallsRenderable(this.ctx))
-  }
-  get mouseables() {
-    return [this.balls]
+    return $(new BallsRenderable(it as Renderable.It))
   }
   get mouseable() {
     $()
     const it = this
     const p = $(new Point)
     class SinkMouseable extends Mouseable {
-      hitArea = it.renderable.rect
+      get its() {
+        return [it.balls]
+      }
       onMouseEvent(kind: Mouse.EventKind): true | void | undefined {
         switch (kind) {
           case Mouse.EventKind.Wheel:
@@ -64,7 +62,7 @@ export class Sink extends Scene
         }
       }
     }
-    return $(new SinkMouseable(this))
+    return $(new SinkMouseable(it as Mouseable.It))
   }
 }
 
@@ -114,8 +112,8 @@ export function setup() {
 
       world.render.add(sink)
 
-      world.anim.fps = 30
-      world.anim.speed = .2
+      world.anim.fps = 60
+      world.anim.speed = .3
       world.anim
         .add(sink.balls)
         .add(sink.boxes1)

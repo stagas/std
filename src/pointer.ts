@@ -1,7 +1,6 @@
 // log.active
 import { $, fn, fx, of } from 'signal'
 import { PointerLikeEvent, dom, on } from 'utils'
-import { AnimState } from './anim.ts'
 import { Point } from './point.ts'
 import { World } from './world.ts'
 
@@ -87,7 +86,7 @@ export class Pointer {
   @fn handler = (real: PointerLikeEvent) => {
     dom.stop(real)
 
-    if (this.world.anim.state & AnimState.Animating) {
+    if (this.world.anim.isAnimating) {
       if (real.type === 'mousemove') return
     }
     else {
@@ -109,7 +108,7 @@ export class Pointer {
     switch (real.type) {
       case 'wheel':
         event.deltaX = real.deltaX
-        event.deltaY = -real.deltaY
+        event.deltaY = real.deltaY
         break
 
       case 'mousemove':

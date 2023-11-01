@@ -2,9 +2,10 @@
 import { $, fn, of } from 'signal'
 import { randomHex } from 'utils'
 import { Context } from '../src/context.ts'
+import { Need } from '../src/need.ts'
 import { Point } from '../src/point.ts'
 import { Rect } from '../src/rect.ts'
-import { Need, Renderable } from '../src/renderable.ts'
+import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 
 export class Box extends Scene {
@@ -28,7 +29,7 @@ export class Box extends Scene {
 const pi2 = Math.PI * 2
 class BoxRenderable extends Renderable {
   constructor(public it: Box, rect: $<Rect>) {
-    super(it.ctx, $(rect.round()))
+    super(it, $(rect.round()))
     this.canDirectDraw = !it.fixed
   }
   canDirectDraw = true

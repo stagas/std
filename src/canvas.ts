@@ -1,5 +1,5 @@
 // log.active
-import { $, fx } from 'signal'
+import { $, fx, of, when } from 'signal'
 import { assign, dom } from 'utils'
 import { Point } from './point.ts'
 import { World } from './world.ts'
@@ -31,21 +31,21 @@ export class Canvas {
   }
 
   @fx resize_to_window() {
-    const { fullWindow, world: { screen: { viewport: { x, y } } } } = $.of(this)
+    const { fullWindow, world: { screen: { viewport: { x, y } } } } = of(this)
     if (fullWindow) this.rect.size.resizeToWindow()
   }
 
-  @fx assign_size() {
+  @fx assign_size(this: Canvas) {
     const { rect: { size }, el, c } = this
-    const { ifNotZero, w, h } = $.of(size)
-    const { pr } = $.of(this.world.screen)
+    const { w, h } = when(size)
+    const { pr } = of(this.world.screen)
 
     $.untrack(() => {
       assign(el, p.set(size).mul(pr).widthHeight)
       c.scale(pr, pr)
     })
 
-    const { style } = $.of<Canvas>(this)
+    const { style } = of(this)
     $.untrack(() => {
       assign(style, p.set(size).widthHeightPx)
     })

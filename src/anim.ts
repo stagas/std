@@ -1,134 +1,152 @@
-// log.active
-import { $, fn } from 'signal'
+log.active
+import { $, fn, fx } from 'signal'
 import { clamp, maybePush, maybeSplice } from 'utils'
-import { Animable, AnimableNeed } from './animable.ts'
+import { Animable } from './animable.ts'
+
+const enum State {
+  Idle,
+  Starting,
+  Stopping,
+  Animating,
+  NeedNextTick,
+}
 
 export class Anim {
   its: Animable.It[] = []
-  state = AnimState.Idle
-
-  tickTime = 0
+  state = State.Idle
   speed = 1
-  acc = 0
   fps = 60
+  acc = 0
   now = 0
-
+  animFrame = -1
+  updated = 0
   get coeff() {
     return (60 / this.fps) * this.speed
   }
-  get timeStep() {
+  get step() {
     return (1000 / this.fps) | 0
   }
   get maxDeltaTime() {
-    return this.timeStep * 5
+    return this.step * 5
   }
-  @fn tick = () => {
-    // const { Need: { Init, Tick, Draw } } = Animatable
-    // const { State: { Starting, NeedNextTick } } = Anim
-    const { its, timeStep, maxDeltaTime, tickTime, coeff } = this
-    let { state, acc } = this
-
-    const now = this.now = performance.now()
-    const dt = now - tickTime
-    this.tickTime = now
-
-    state ^= AnimState.NeedNextTick
-
-    if (dt > maxDeltaTime) {
-      requestAnimationFrame(this.tick)
-      return
-    }
-
-    // let needNextTick: boolean | undefined
-
-    if (state & AnimState.Starting) {
-      // then start with a full timeStep in the accumulator,
-      // so that we get an items update() and have
-      // something to draw.
-      acc = timeStep + 0.00001
-    }
-    else {
-      acc += dt
-    }
-
-    if (acc > timeStep) {
-      acc -= timeStep
-      let res: number
-      for (const { animable: a } of its) {
-        if (a.need & AnimableNeed.Tick) {
-          a.coeff = coeff
-          res = a.tick?.(dt)!
-          if (res & AnimableNeed.Tick) {
-            state |= AnimState.NeedNextTick
-            a.tickOne(dt)
-          }
-        }
-      }
-    }
-
-    while (acc > timeStep) {
-      acc -= timeStep
-      for (const { animable: a } of its) {
-        a.need & AnimableNeed.Tick && (state |= a.tick?.(dt)!)
-      }
-    }
-
-    const t = clamp(0, 1, (this.acc = acc) / timeStep)
-
-    for (const { animable: a } of its) {
-      a.need & AnimableNeed.Init && a.init?.()
-      a.need & AnimableNeed.Draw && a.draw?.(t)
-    }
-
-    if (state & AnimState.NeedNextTick) {
-      this.state |= AnimState.Animating
-      requestAnimationFrame(this.tick)
-    }
-    else if (state & AnimState.Stopping) {
-      this.state = AnimState.Idle
-      this.stop()
-    }
-    else {
-      this.state |= AnimState.Stopping
-      requestAnimationFrame(this.tick)
-    }
+  get isAnimating() {
+    return this.state
   }
   @fn add(it: Animable.It) {
     maybePush(this.its, it)
+    this.updated++
     return this
   }
   @fn remove(it: Animable.It) {
     maybeSplice(this.its, it)
+    this.updated++
     return this
+  }
+  @fx listen_its() {
+    if (this.isAnimating) return
+    this.updated
+    let pass = 0
+    for (const it of this.its) {
+      pass |= it.animable.need
+    }
+    if (pass) {
+      $()
+      this.start()
+      return
+    }
   }
   @fn removeAll() {
     this.its.splice(0)
     return this
   }
   @fn start() {
-    const { state } = this
-    if (state & (AnimState.Animating | AnimState.Starting)) return
-    this.state = AnimState.Starting
-    this.tick()
+    if (!this.isAnimating) {
+      cancelAnimationFrame(this.animFrame)
+      this.state = State.Starting
+      this.tick()
+    }
     return this
   }
   @fn stop() {
-    this.state = AnimState.Idle
+    cancelAnimationFrame(this.animFrame)
+    this.state = State.Idle
     this.acc = 0
     return this
+  }
+  @fn tick = (ms?: number) => {
+    const { state, its, step, maxDeltaTime, now: before } = this
+    let { acc } = this
+
+    const now = ms ?? performance.now()
+    const dt = now - before
+    this.now = now
+
+    let needNextTick: boolean | undefined
+
+    if (dt > maxDeltaTime) {
+      this.animFrame = requestAnimationFrame(this.tick)
+      return
+    }
+
+    // let needNextTick: boolean | undefined
+
+    if (state === State.Starting) {
+      // then start with a full timeStep in the accumulator,
+      // so that we get an items update() and have
+      // something to draw.
+      acc = step + 0.00001
+    }
+    else {
+      acc += dt
+    }
+
+    if (acc > step) {
+      acc -= step
+      for (const { animable: a } of its) {
+        if (a.need & Animable.Need.Tick) {
+          a.tick?.(dt)
+          if (a.need & Animable.Need.Tick) {
+            a.tickOne?.(dt)
+          }
+        }
+      }
+    }
+
+    while (acc > step) {
+      acc -= step
+      for (const { animable: a } of its) {
+        a.need & Animable.Need.Tick && a.tick?.(dt)
+      }
+    }
+
+    const t = clamp(0, 1, (this.acc = acc) / step)
+
+    for (const { animable: a } of its) {
+      a.need & Animable.Need.Init && a.init?.()
+      a.need & Animable.Need.Draw && a.draw?.(t)
+    }
+
+    for (const { animable: a } of its) {
+      if (a.need & Animable.Need.Tick) {
+        needNextTick = true
+        break
+      }
+    }
+
+    if (needNextTick) {
+      this.state = State.Animating
+      this.animFrame = requestAnimationFrame(this.tick)
+    }
+    else if (state === State.Stopping) {
+      this.stop()
+    }
+    else {
+      this.state = State.Stopping
+      this.animFrame = requestAnimationFrame(this.tick)
+    }
   }
 
   // @fx print_isAnimating() {
   //   console.log('is animating', this.isAnimating)
   // }
 }
-
-export const enum AnimState {
-  Idle = 0,
-  Starting = 1 << 0,
-  Stopping = 1 << 1,
-  Animating = 1 << 2,
-  NeedNextTick = 1 << 3,
-}
-// export namespace Anim {
-// }

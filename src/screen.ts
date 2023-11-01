@@ -21,6 +21,7 @@ export class Screen {
     },
     window.devicePixelRatio
   )
+  get prRecip() { return 1 / this.pr }
   cursor = 'default'
   @fx update_style_cursor() {
     dom.body.style.cursor = this.cursor

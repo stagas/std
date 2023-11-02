@@ -20,9 +20,12 @@ export class Render
   check: Dirty[] = []
   visited: Dirty[] = []
 
-  clearing = $(new FixedArray<Renderable>)
-  drawing = $(new FixedArray<Renderable>)
-  stationary = $(new FixedArray<Renderable>)
+  clearing = new Set<Renderable>() //$(new FixedArray<Renderable>)
+  drawing = new Set<Renderable>() //$(new FixedArray<Renderable>)
+  stationary = new Set<Renderable>() //$(new FixedArray<Renderable>)
+  // clearing = $(new FixedArray<Renderable>)
+  // drawing = $(new FixedArray<Renderable>)
+  // stationary = $(new FixedArray<Renderable>)
 
   scroll = $(new Point)
   view = $(new Rect)
@@ -53,17 +56,17 @@ export class Render
       const { renderable: r } = it
       if (c && r.scroll) {
         scroll.add(r.scroll).round()
-        r.before?.(c)
+        // r.before?.(c)
         if (r.its) yield* this.traverse(r.its, c)
         yield it as any
-        r.after?.(c)
+        // r.after?.(c)
         scroll.sub(r.scroll).round()
       }
       else {
-        if (c) r.before?.(c)
+        // if (c) r.before?.(c)
         if (r.its) yield* this.traverse(r.its, c)
         yield it as any
-        if (c) r.after?.(c)
+        // if (c) r.after?.(c)
       }
     }
   }
@@ -80,7 +83,7 @@ export class Render
         it.updated
         for (const { renderable: r } of Renderable.traverse(it.its)) {
           pass |= r.need
-          // console.log('PASS', r.it, r.need)
+          // if (r.need) console.log('PASS', r.it, r.need)
         }
         return pass
         // if (pass) {
@@ -91,7 +94,7 @@ export class Render
         // }
       }
       // need = Need.Tick | Need.Draw
-      @fx trigger_draw() {
+      @fx trigger_anim_draw() {
         if (this.itsNeedDraw) {
           $()
           this.need |= Animable.Need.Draw
@@ -105,57 +108,58 @@ export class Render
       //   }
       // }
       @fn directDraw(t = 1) {
-        const { scroll, visible } = it
-        const { canvas: { c, rect } } = of(it.world)
+        return
+        // const { scroll, visible } = it
+        // const { canvas: { c, rect } } = of(it.world)
 
-        // TODO: we can combine all rects and clear only stuff
-        // that were painted --BENCH
-        rect.clear(c)
+        // // TODO: we can combine all rects and clear only stuff
+        // // that were painted --BENCH
+        // rect.clear(c)
 
-        scroll.zero()
+        // scroll.zero()
 
-        for (const { renderable: r } of it.traverse(it.its, c)) {
-          // $view.set(view).translateNegative(scroll)
-          r.isVisible = r.view.intersectsRect(visible)
-          if (!r.isVisible) continue
+        // for (const { renderable: r } of it.traverse(it.its, c)) {
+        //   // $view.set(view).translateNegative(scroll)
+        //   r.isVisible = r.view.intersectsRect(visible)
+        //   if (!r.isVisible) continue
 
-          if (r.canDirectDraw) {
-            c.save()
-            scroll.translate(c)
-            r.init?.(c)
-            // CORRECT
-            r.view.round().pos.translate(c)
+        //   if (r.canDirectDraw) {
+        //     c.save()
+        //     scroll.translate(c)
+        //     r.init?.(c)
+        //     // CORRECT
+        //     r.view.round().pos.translate(c)
 
-            r.render!(c, t, false)
-            c.restore()
-            // r.need |= Renderable.Need.Init | Renderable.Need.Render
-          }
-          else {
-            if (r.need & Renderable.Need.Init) {
-              if (r.init) r.init(r.canvas.c)
-              else {
-                r.need ^= Renderable.Need.Init
-                r.need |= Renderable.Need.Render
-              }
-            }
-            if (r.need & Renderable.Need.Render) {
-              if (r.render) r.render(r.canvas.c, t, true)
-              else {
-                r.need ^= Renderable.Need.Render
-                r.need |= Renderable.Need.Draw
-              }
-            }
-            if (r.draw) r.draw(c, t, scroll)
-          }
-        }
+        //     r.render!(c, t, false)
+        //     c.restore()
+        //     // r.need |= Renderable.Need.Init | Renderable.Need.Render
+        //   }
+        //   else {
+        //     if (r.need & Renderable.Need.Init) {
+        //       if (r.init) r.init(r.canvas.c)
+        //       else {
+        //         r.need &= ~Renderable.Need.Init
+        //         r.need |= Renderable.Need.Render
+        //       }
+        //     }
+        //     if (r.need & Renderable.Need.Render) {
+        //       if (r.render) r.render(r.canvas.c, t, true)
+        //       else {
+        //         r.need &= ~Renderable.Need.Render
+        //         r.need |= Renderable.Need.Draw
+        //       }
+        //     }
+        //     if (r.draw) r.draw(c, t, scroll)
+        //   }
+        // }
 
-        this.need ^= Animable.Need.Draw
+        // this.need &= ~Animable.Need.Draw
       }
       @fn draw(t = 1) {
-        if (it.needDirect) {
-          this.directDraw(t)
-          return
-        }
+        // if (it.needDirect) {
+        //   this.directDraw(t)
+        //   return
+        // }
 
         const { canvas: { c }, screen: { pr } } = of(it.world)
 
@@ -168,15 +172,21 @@ export class Render
           stationary,
         } = it
 
-        clearing.count
-          = drawing.count
-          = stationary.count
-          = 0
+        clearing.clear()
+          drawing.clear()
+          stationary.clear()
+
+        // clearing.count
+        //   = drawing.count
+        //   = stationary.count
+        //   = 0
 
         scroll.zero()
 
         // traverse all renderables depth-first
         for (const { renderable: r } of it.traverse(it.its, c)) {
+          // if (!r.init && !r.render && !r.draw) continue
+
           // check if this renderable is visible
           const isVisible = sr.set(r.view)
             .translate(scroll)
@@ -190,13 +200,15 @@ export class Render
               continue
             }
             r.isVisible = true
-            r.need |= Renderable.Need.Init
+            if (r.init) r.need |= Renderable.Need.Init
+            else if (r.render) r.need |= Renderable.Need.Render
+            else if (r.draw) r.need |= Renderable.Need.Draw
           }
           else {
             if (!isVisible) {
               // item was visible, but now left,
               // so we need to clear it
-              clearing.push(r)
+              clearing.add(r)
 
               r.isVisible = false
               r.need = 0
@@ -204,22 +216,19 @@ export class Render
             }
           }
 
-          // TODO: The 'init' in r 'render' in r etc don't
-          // need to be in the hot loop and can be done
-          // at an earlier step.
-          if (r.need & Renderable.Need.Init) {
-            if (r.init) r.init(r.canvas.c)
-            else {
-              r.need ^= Renderable.Need.Init
-              r.need |= Renderable.Need.Render
-            }
+          if (r.init && (r.need & Renderable.Need.Init) ) {
+            r.init(r.canvas.c)
           }
-          if (r.need & Renderable.Need.Render) {
-            if (r.render) r.render(r.canvas.c, t, true)
-            else {
-              r.need ^= Renderable.Need.Render
-              r.need |= Renderable.Need.Draw
-            }
+          else {
+            r.need &= ~Renderable.Need.Init
+            r.need |= Renderable.Need.Render
+          }
+
+          if (r.render && (r.need & Renderable.Need.Render)) {
+            r.render(r.canvas.c, t, true)
+          }
+          else {
+            r.need &= ~Renderable.Need.Render
           }
 
           // schedule renderables to draw
@@ -231,44 +240,58 @@ export class Render
               || !r.dirty.scroll.equals(scroll)
             ) {
               // schedule to clear
-              clearing.push(r)
+              clearing.add(r)
               r.dirty.scroll.set(scroll)
             }
             else {
-              stationary.push(r)
+              stationary.add(r)
             }
-            drawing.push(r)
+            drawing.add(r)
           }
           else {
-            r.need ^= Renderable.Need.Draw
+            r.need &= ~Renderable.Need.Draw
           }
         }
 
         // clear what was visible before, but is not visible now
-        for (let i = 0; i < clearing.count; i++) {
-          clearing.array[i].dirty.clear(c)
+        for (const r of clearing) { //let i = 0; i < clearing.count; i++) {
+        // for (let i = 0; i < clearing.count; i++) {
+          r.dirty.clear(c)
+          // clearing.array[i].dirty.clear(c)
         }
 
         // draw scheduled
-        for (let i = 0, r: Renderable; i < drawing.count; i++) {
-          r = drawing.array[i]
-          if (stationary.includes(stationary.count, r)) {
-            for (let j = 0; j < clearing.count; j++) {
-              clearing.array[j].dirty
+        for (const r of drawing) { //let i = 0, r: Renderable; i < drawing.count; i++) {
+        // for (let i = 0, r: Renderable; i < drawing.count; i++) {
+          // r = drawing.array[i]
+          if (stationary.has(r)) { //stationary.count, r)) {
+          // if (stationary.includes(stationary.count, r)) {
+            for (const other of clearing) { //let j = 0; j < clearing.count; j++) {
+              other.dirty
+              // clearing.array[j].dirty
                 .redrawOverlap(r.dirty, c, pr)
             }
           }
           else {
+            // for (let j = 0; j < clearing.count; j++) {
+            //   r.dirty
+            //     .redrawOverlap(clearing.array[j].dirty, c, pr)
+            // }
+
+
             r.draw!(c, t, r.dirty.scroll)
 
             r.dirty.rect
               .set(r.view)
               .translateByPos(r.dirty.scroll)
+
           }
         }
 
+        // console.log(drawing.size)
+
         if (!this.itsNeedDraw) {
-          this.need ^= Animable.Need.Draw
+          this.need &= ~Animable.Need.Draw
         }
       }
     }

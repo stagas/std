@@ -45,7 +45,7 @@ export class Sink extends Scene
       }
       @fn init(c: CanvasRenderingContext2D) {
         c.imageSmoothingEnabled = false
-        this.need ^= Renderable.Need.Init
+        this.need &= ~Renderable.Need.Init
       }
     }
     return $(new SinkRenderable(it as Renderable.It))

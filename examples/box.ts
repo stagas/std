@@ -38,7 +38,7 @@ class BoxRenderable extends Renderable {
     c.imageSmoothingEnabled = false
     c.lineWidth = 1.5 / this.pr
     c.strokeStyle = '#fff'
-    this.need ^= Renderable.Need.Init
+    this.need &= ~Renderable.Need.Init
     this.need |= Renderable.Need.Render
   }
   @fn render(c: CanvasRenderingContext2D, t: number, clear: boolean) {
@@ -62,7 +62,7 @@ class BoxRenderable extends Renderable {
     c.stroke()
     c.restore()
     this.phase = phase % pi2
-    if (it.fixed) this.need ^= Renderable.Need.Render
+    if (it.fixed) this.need &= ~Renderable.Need.Render
     this.need |= Renderable.Need.Draw
   }
   draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
@@ -75,6 +75,6 @@ class BoxRenderable extends Renderable {
       scroll
     )
 
-    if (it.fixed) this.need ^= Renderable.Need.Draw
+    if (it.fixed) this.need &= ~Renderable.Need.Draw
   }
 }

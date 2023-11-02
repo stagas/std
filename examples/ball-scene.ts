@@ -205,7 +205,7 @@ class BallSceneAnimable extends Animable {
     }
 
     if (!need) {
-      this.need ^= Animable.Need.Draw
+      this.need &= ~Animable.Need.Draw
     }
     else {
       this.need = Animable.Need.Tick | Animable.Need.Draw

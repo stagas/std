@@ -60,7 +60,7 @@ class BallRenderable extends Renderable {
   }
   @fn init(c: CanvasRenderingContext2D) {
     c.imageSmoothingEnabled = false
-    this.need ^= Renderable.Need.Init
+    this.need &= ~Renderable.Need.Init
     this.need |= Renderable.Need.Render
   }
   @fn render(c: CanvasRenderingContext2D, t: number, clear: boolean) {
@@ -75,7 +75,7 @@ class BallRenderable extends Renderable {
     circle.lerpPos.lerpPoint.translateNegative(c)
     circle.lerpFill(c)
     c.restore()
-    this.need ^= Renderable.Need.Render
+    this.need &= ~Renderable.Need.Render
     this.need |= Renderable.Need.Draw
   }
   @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
@@ -89,6 +89,6 @@ class BallRenderable extends Renderable {
       true,
       scroll
     )
-    // this.need ^= Renderable.Need.Draw
+    // this.need &= ~Renderable.Need.Draw
   }
 }

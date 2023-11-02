@@ -2,7 +2,6 @@
 import { $, fn, of } from 'signal'
 import { randomHex } from 'utils'
 import { Context } from '../src/context.ts'
-import { Need } from '../src/need.ts'
 import { Point } from '../src/point.ts'
 import { Rect } from '../src/rect.ts'
 import { Renderable } from '../src/renderable.ts'
@@ -33,14 +32,14 @@ class BoxRenderable extends Renderable {
     this.canDirectDraw = !it.fixed
   }
   canDirectDraw = true
-  need = Need.Render
   phase = 0
   speed = Math.random() * 0.5
   @fn init(c: CanvasRenderingContext2D) {
     c.imageSmoothingEnabled = false
     c.lineWidth = 1.5 / this.pr
     c.strokeStyle = '#fff'
-    this.need ^= Need.Init
+    this.need ^= Renderable.Need.Init
+    this.need |= Renderable.Need.Render
   }
   @fn render(c: CanvasRenderingContext2D, t: number, clear: boolean) {
     let { it, rect, phase, speed } = this
@@ -63,8 +62,8 @@ class BoxRenderable extends Renderable {
     c.stroke()
     c.restore()
     this.phase = phase % pi2
-    if (it.fixed) this.need ^= Need.Render
-    this.need |= Need.Draw
+    if (it.fixed) this.need ^= Renderable.Need.Render
+    this.need |= Renderable.Need.Draw
   }
   draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { it, canvas, rect, pr } = this
@@ -76,6 +75,6 @@ class BoxRenderable extends Renderable {
       scroll
     )
 
-    if (it.fixed) this.need ^= Need.Draw
+    if (it.fixed) this.need ^= Renderable.Need.Draw
   }
 }

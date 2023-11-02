@@ -1,13 +1,12 @@
 // log.active
-import { $, fn, fx, of, when } from 'signal'
-import { whenNot } from 'signal/src/signal-core.ts'
+import { $, fn, fx, of, when, whenNot } from 'signal'
 import { Circle } from '../src/circle.ts'
-import { Need } from '../src/need.ts'
 import { Point } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
 
-export class Ball extends Scene {
+export class Ball extends Scene
+  implements Renderable.It {
   circle = $(new Circle)
   radius = this.circle.$.radius
   pos = this.circle.rect.center
@@ -26,7 +25,8 @@ export class Ball extends Scene {
 
   get renderable() {
     $()
-    return $(new BallRenderable(this), {
+    const it = this
+    return $(new BallRenderable(it), {
       rect: { size: this.circle.rect.size.xy }
     })
   }
@@ -34,13 +34,21 @@ export class Ball extends Scene {
 
 class BallRenderable extends Renderable {
   constructor(public it: Ball) { super(it) }
-  need = Need.Render
+  need = Renderable.Need.Init
+  // @fx trigger_draw() {
+  //   const { it } = this
+  //   const { x, y } = it.circle.lerpPos.lerpPoint
+  //   const { x: px, y: py } = it.pos
+  //   $()
+  //   this.need |= Renderable.Need.Draw
+  // }
   @fx setup() {
     const { it } = this
     const { hasSize } = when(it.circle.rect)
     $()
     it.circle.lerpPos.p1.set(it.pos).round()
     it.circle.lerpPos.p2.set(it.pos).round()
+    // this.need |= Renderable.Need.Draw
   }
   @fx update_pos_when_not_visible() {
     const { isVisible } = whenNot(this)
@@ -52,18 +60,23 @@ class BallRenderable extends Renderable {
   }
   @fn init(c: CanvasRenderingContext2D) {
     c.imageSmoothingEnabled = false
-    this.need ^= Need.Init
+    this.need ^= Renderable.Need.Init
+    this.need |= Renderable.Need.Render
   }
-  @fn render(c: CanvasRenderingContext2D) {
-    const { it } = this
+  @fn render(c: CanvasRenderingContext2D, t: number, clear: boolean) {
+    const { it, rect } = this
     const { circle } = it
     const { radius: r } = circle
     c.save()
+    if (clear) {
+      rect.clear(c)
+    }
     c.translate(r, r)
-    circle.fill(c)
+    circle.lerpPos.lerpPoint.translateNegative(c)
+    circle.lerpFill(c)
     c.restore()
-    this.need ^= Need.Render
-    this.need |= Need.Draw
+    this.need ^= Renderable.Need.Render
+    this.need |= Renderable.Need.Draw
   }
   @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
     const { it, canvas, rect, pr } = of(this)
@@ -76,6 +89,6 @@ class BallRenderable extends Renderable {
       true,
       scroll
     )
-    // console.log('yo')
+    // this.need ^= Renderable.Need.Draw
   }
 }

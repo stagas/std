@@ -59,7 +59,10 @@ export class Rect extends Shape {
     public w = size.$.w,
     public h = size.$.h,
   ) { super() }
-
+  get x_pr() { return this.pr * this.x }
+  get y_pr() { return this.pr * this.y }
+  get w_pr() { return this.pr * this.w }
+  get h_pr() { return this.pr * this.h }
   get json() {
     const { x, y, w, h } = this
     return { x, y, w, h }
@@ -360,14 +363,15 @@ export class Rect extends Shape {
     c: CanvasRenderingContext2D,
     pr = 1,
     normalize = false) {
-    const { x, y, w, h } = this
+    this.pr = pr
     let n = !normalize ? 1 : 0
+    const { x, x_pr, y, y_pr, w, w_pr, h, h_pr } = this
     c.drawImage(
       canvas,
-      x * pr * n,
-      y * pr * n,
-      w * pr,
-      h * pr,
+      x_pr * n,
+      y_pr * n,
+      w_pr,
+      h_pr,
       x,
       y,
       w,
@@ -381,18 +385,39 @@ export class Rect extends Shape {
     pr = 1,
     normalize = false,
     pos: PointLike) {
-    const { x, y, w, h } = this
+    this.pr = pr
     let n = !normalize ? 1 : 0
+    const { x, x_pr, y, y_pr, w, w_pr, h, h_pr } = this
     c.drawImage(
       canvas,
-      x * pr * n,
-      y * pr * n,
-      w * pr,
-      h * pr,
+      x_pr * n,
+      y_pr * n,
+      w_pr,
+      h_pr,
       x + pos.x,
       y + pos.y,
       w,
       h
+    )
+    return this
+  }
+  drawImageTranslatedWithView(
+    canvas: HTMLCanvasElement,
+    c: CanvasRenderingContext2D,
+    pr = 1,
+    pos: PointLike,
+    view: Rect) {
+    const { x, y, w, h } = this
+    c.drawImage(
+      canvas,
+      x * pr,
+      y * pr,
+      view.w * pr,
+      view.h * pr,
+      x + pos.x,
+      y + pos.y,
+      view.w,
+      view.h
     )
     return this
   }
@@ -401,11 +426,32 @@ export class Rect extends Shape {
     c: CanvasRenderingContext2D,
     pr: number,
     pos: PointLike) {
-    const { x, y, w, h } = this
+    this.pr = pr
+    const { x, y, w, h, w_pr, h_pr } = this
     c.drawImage(
       canvas,
       (x - pos.x) * pr,
       (y - pos.y) * pr,
+      w_pr,
+      h_pr,
+      x,
+      y,
+      w,
+      h
+    )
+    return this
+  }
+  drawImageNormalizePosAndView(
+    canvas: HTMLCanvasElement,
+    c: CanvasRenderingContext2D,
+    pr: number,
+    pos: PointLike,
+    viewPos: PointLike) {
+    const { x, y, w, h } = this
+    c.drawImage(
+      canvas,
+      (x - pos.x - viewPos.x) * pr,
+      (y - pos.y - viewPos.y) * pr,
       w * pr,
       h * pr,
       x,

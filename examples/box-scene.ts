@@ -1,7 +1,6 @@
 // log.active
 import { $, fn, of } from 'signal'
 import { Animable } from '../src/animable.ts'
-import { Need } from '../src/need.ts'
 import { Point } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
@@ -17,12 +16,11 @@ export class BoxScene extends Scene
     const it = this
     const { canvas } = of(it.ctx.world)
     class BoxSceneRenderable extends Renderable {
+      scroll = $(new Point)
       get its() {
         const { fixedBoxes, boxes } = of(it)
         return [...fixedBoxes, ...boxes]
       }
-      isVisible = true
-      scroll = $(new Point)
     }
     return $(new BoxSceneRenderable(
       it as Renderable.It,
@@ -36,8 +34,8 @@ export class BoxScene extends Scene
     let phase = 0
     const pi2 = Math.PI * 2
     const { ctx: { world: { screen: { viewport } } } } = it
-    class BoxSceneAnimatable extends Animable {
-      need = Need.Tick
+    class BoxSceneAnimable extends Animable {
+      need = Animable.Need.Tick
       @fn tick(t: number) {
         let i = 0
         const { center } = viewport
@@ -49,7 +47,7 @@ export class BoxScene extends Scene
             )
             .round()
         }
-        return Need.Tick
+        // this.need |= Animable.Need.Tick
       }
       tickOne(dt: number) {
         phase += it.speed
@@ -57,7 +55,7 @@ export class BoxScene extends Scene
         it.renderable.scroll.zero().angleShiftBy(phase, 100).round()
       }
     }
-    return $(new BoxSceneAnimatable)
+    return $(new BoxSceneAnimable(it as Animable.It))
   }
 
   // get pointable() {

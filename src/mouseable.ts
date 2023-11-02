@@ -5,7 +5,22 @@ import { Point } from './point.ts'
 import { Renderable } from './renderable.ts'
 
 export abstract class Mouseable {
+  static *traverse(its: Mouseable.It[]): Generator<Mouseable.It> {
+    for (const it of its) {
+      const { mouseable: m } = it
+      if (m.its) yield* Mouseable.traverse(m.its)
+      yield it as any
+    }
+  }
+  static some(its: Mouseable.It[], predicate: (m: Mouseable.It) => boolean) {
+    for (const m of Mouseable.traverse(its)) {
+      if (predicate(m)) return true
+    }
+    return false
+  }
+
   canHover = true
+  canFocus = true
   cursor = 'default'
 
   constructor(

@@ -1,4 +1,4 @@
-log.active
+// log.active
 import { $, fn, fx } from 'signal'
 import { clamp, maybePush, maybeSplice } from 'utils'
 import { Animable } from './animable.ts'
@@ -80,7 +80,6 @@ export class Anim {
     const now = ms ?? performance.now()
     const dt = now - before
     this.now = now
-
     let needNextTick: boolean | undefined
 
     if (dt > maxDeltaTime) {

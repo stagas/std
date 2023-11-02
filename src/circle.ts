@@ -89,8 +89,15 @@ export class Circle extends Shape {
     const { pos, radius } = this
     return pos.distance(p) < radius
   }
-  fill(c: CanvasRenderingContext2D): void {
+  lerpFill(c: CanvasRenderingContext2D): void {
     const { fillColor: color, lerpPos: { lerpPoint: pos }, radius } = this
+    c.beginPath()
+    c.fillStyle = color
+    c.arc(pos.x, pos.y, radius, 0, Math.PI * 2, true)
+    c.fill()
+  }
+  fill(c: CanvasRenderingContext2D): void {
+    const { fillColor: color, pos, radius } = this
     c.beginPath()
     c.fillStyle = color
     c.arc(pos.x, pos.y, radius, 0, Math.PI * 2, true)

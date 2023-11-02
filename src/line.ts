@@ -141,7 +141,7 @@ export class Line extends Shape {
     intersection: Intersect,
     r: Rect) {
     if (intersection === Intersect.None) {
-      return this
+      return
     }
 
     const { p1, p2 } = this

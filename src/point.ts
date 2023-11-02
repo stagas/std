@@ -1,4 +1,4 @@
-import { $, alias, fn } from 'signal'
+import { $, alias, computed, fn, fx, nu, of } from 'signal'
 import type { MatrixLike } from './matrix.ts'
 import type { Rect } from './rect.ts'
 import { Shape } from './shape.ts'
@@ -7,9 +7,10 @@ import { drawText } from 'utils'
 export type PointLike = Point['json']
 
 export class Point extends Shape {
-  x = 0
-  y = 0
-
+  constructor(
+    public x = 0,
+    public y = 0,
+  ) { super() }
   setParameters(x: number, y: number) {
     this.x = x
     this.y = y
@@ -23,6 +24,8 @@ export class Point extends Shape {
     const { x, y } = this
     return [x, y] as const
   }
+  get x_pr() { return this.pr * this.x }
+  get y_pr() { return this.pr * this.y }
   get widthHeightPx() {
     return {
       width: this.width + 'px',
@@ -77,6 +80,14 @@ export class Point extends Shape {
   width = alias(this, 'x')
   height = alias(this, 'y')
 
+  get $inverted() {
+    return $(new Point)
+  }
+  get inverted() {
+    const { x, y } = this
+    $()
+    return this.$inverted.setParameters(-x, -y) as $<Point>
+  }
   @fn resizeToWindow() {
     this.w = window.innerWidth
     this.h = window.innerHeight

@@ -7,7 +7,6 @@ import { Keyboard } from '../src/keyboard.ts'
 import { Keyboardable } from '../src/keyboardable.ts'
 import { Mouse } from '../src/mouse.ts'
 import { Mouseable } from '../src/mouseable.ts'
-import { Need } from '../src/need.ts'
 import { Point, byX, byY } from '../src/point.ts'
 import { Renderable } from '../src/renderable.ts'
 import { Scene } from '../src/scene.ts'
@@ -164,7 +163,6 @@ export class BallScene extends Scene
     }
     return $(new BallSceneKeyboardable(it as Keyboardable.It))
   }
-
   get renderable() {
     $()
     const it = this
@@ -183,13 +181,14 @@ export class BallScene extends Scene
   }
   get animable() {
     $()
-    return $(new BallSceneAnimable(this))
+    const it = this
+    return $(new BallSceneAnimable(it))
   }
 }
 
 class BallSceneAnimable extends Animable {
-  constructor(public it: BallScene) { super() }
-  need = Need.Tick
+  constructor(public it: BallScene) { super(it) }
+  need = Animable.Need.Tick
   @fn tick() {
     const { gravity, motion, walls, balls, ctx: { world: { mouse } } } = this.it
 
@@ -199,14 +198,18 @@ class BallSceneAnimable extends Animable {
       if (walls.update(ball)) continue
       gravity.update(ball)
       motion.update(ball)
-      need = Need.Tick
+      need = Animable.Need.Tick
     }
     if (performance.now() - mouse!.pointer!.time < 2000) {
       balls[0].pos.set(cp)
     }
 
-    if (!need) this.need ^= Need.Draw
-    else this.need = Need.Tick | Need.Draw
+    if (!need) {
+      this.need ^= Animable.Need.Draw
+    }
+    else {
+      this.need = Animable.Need.Tick | Animable.Need.Draw
+    }
   }
   @fn tickOne() {
     const {

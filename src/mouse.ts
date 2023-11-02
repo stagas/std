@@ -1,5 +1,5 @@
 // log.active
-import { $, fx, nu, of } from 'signal'
+import { $, fx, nu, of, when } from 'signal'
 import { MouseButton } from 'utils'
 import { DOUBLE_CLICK_MS, SINGLE_CLICK_MS } from './constants.ts'
 import { Mouseable } from './mouseable.ts'
@@ -23,25 +23,39 @@ export class Mouse extends Scene {
   downIt?: Mouseable.It | null | undefined
 
   @fx update_it_mouseable_isDown() {
-    const { downIt: { mouseable: m } } = of(this)
+    const { downIt: { mouseable: m } } = when(this)
     $()
     m.isDown = true
     m.mouse.downPos.set(m.mouse.pos)
-    this.focusIt = this.downIt
     return () => {
       m.isDown = false
     }
   }
-  @fx update_it_mouseable_isHovering() {
-    const { hoverIt: { mouseable: m } } = of(this)
+  @fx update_it_mouseable_isFocused() {
+    const { downIt: { mouseable: m } } = when(this)
     $()
-    const { ctx: { world } } = of(this)
-    m.isHovering = true
-    m.onMouseEvent?.(Enter)
-    world.screen.cursor = m.cursor
-    return () => {
-      m.isHovering = false
-      m.onMouseEvent?.(Leave)
+    if (m.canFocus) {
+      if (this.focusIt) {
+        this.focusIt.mouseable.isFocused = false
+        this.focusIt.mouseable.onMouseEvent?.(Blur)
+      }
+      m.isFocused = true
+      m.onMouseEvent?.(Focus)
+      this.focusIt = this.downIt
+    }
+  }
+  @fx update_it_mouseable_isHovering() {
+    const { hoverIt: { mouseable: m } } = when(this)
+    $()
+    if (m.canHover) {
+      const { ctx: { world } } = of(this)
+      m.isHovering = true
+      m.onMouseEvent?.(Enter)
+      world.screen.cursor = m.cursor
+      return () => {
+        m.isHovering = false
+        m.onMouseEvent?.(Leave)
+      }
     }
   }
   *traverseGetItAtPoint(it: Mouseable.It): Generator<Mouseable.It> {
@@ -69,10 +83,10 @@ export class Mouse extends Scene {
     scroll.zero()
 
     // the down It is always the first under the pointer.
-    if (downIt) {
-      downIt.mouseable.mouse.pos.set(pos)
-      yield downIt
-    }
+    // if (downIt) {
+    //   downIt.mouseable.mouse.pos.set(pos)
+    //   yield downIt
+    // }
 
     yield* this.traverseGetItAtPoint(it)
   }
@@ -172,10 +186,12 @@ export namespace Mouse {
     Leave,
     Click,
     Menu,
+    Focus,
+    Blur,
   }
 }
 
-const { Wheel, Down, Up, Leave, Move, Menu, Click, Enter } = Mouse.EventKind
+const { Wheel, Down, Up, Leave, Move, Menu, Click, Enter, Focus, Blur } = Mouse.EventKind
 
 const PointerEventMap = {
   [PointerEventType.Wheel]: Wheel,

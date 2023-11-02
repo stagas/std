@@ -18,6 +18,9 @@ export class Sink extends Scene
   get balls() {
     $(); return $(new BallScene(this.ctx), { count: 50 })
   }
+  get fixedBoxes() {
+    $(); return $(new BoxScene(this.ctx), { speed: 0 })
+  }
   get boxes1() {
     $(); return $(new BoxScene(this.ctx), { speed: 0.006 })
   }
@@ -27,10 +30,11 @@ export class Sink extends Scene
   get renderable() {
     $()
     const it = this
-    class BallsRenderable extends Renderable {
+    class SinkRenderable extends Renderable {
       scroll = $(new Point)
       get its() {
         return [
+          it.fixedBoxes,
           it.boxes1,
           it.boxes2,
           it.balls,
@@ -44,7 +48,7 @@ export class Sink extends Scene
         this.need ^= Renderable.Need.Init
       }
     }
-    return $(new BallsRenderable(it as Renderable.It))
+    return $(new SinkRenderable(it as Renderable.It))
   }
   get mouseable() {
     $()
@@ -92,7 +96,7 @@ export function setup() {
       const { center } = world.screen.viewport
 
       for (let i = 0; i < 10; i++) {
-        sink.boxes1.fixedBoxes.push($(new Box(ctx,
+        sink.fixedBoxes.boxes.push($(new Box(ctx,
           $(new Point().set(center)
             .angleShiftBy((i / 20) * pi2, 200))
         ), { fixed: true }))
@@ -109,18 +113,17 @@ export function setup() {
             .angleShiftBy((i / 20) * pi2, 300))
         )))
       }
-
+      // $.batch(() => {
       world.render.add(sink)
-
       world.anim.fps = 60
       world.anim.speed = .3
       world.anim
-        .add(sink.balls)
         .add(sink.boxes1)
         .add(sink.boxes2)
+        .add(sink.balls)
         .add(world.render)
-        .start()
-
+      // .start()
+      // })
       const stop = (e?: MouseEvent) => {
         // if (e.buttons & MouseButtons.Right) {
         e?.preventDefault()

@@ -13,9 +13,9 @@ export class Dirty {
     public owner: Renderable,
     public rect = $(new Rect)
   ) { }
-  depth = 0
-  index = 0
+  index = -1
   scroll = $(new Point)
+  nextScroll = $(new Point)
   redrawing = $(new FixedArray<Rect>)
   overlapWith(other: Dirty) {
     testRect1 ??= $(new Rect)

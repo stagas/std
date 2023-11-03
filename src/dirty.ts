@@ -3,29 +3,50 @@ import { $ } from 'signal'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
+import { FixedArray } from './fixed-array.ts'
+
+let testRect1: $<Rect>
+let testRect2: $<Rect>
 
 export class Dirty {
   constructor(
     public owner: Renderable,
     public rect = $(new Rect)
   ) { }
+  depth = 0
+  index = 0
   scroll = $(new Point)
+  redrawing = $(new FixedArray<Rect>)
   overlapWith(other: Dirty) {
-    return this.rect.intersectionRect(other.rect)
+    testRect1 ??= $(new Rect)
+    testRect2 ??= $(new Rect)
+    return testRect1
+      .set(this.rect)
+      .translateByPos(this.scroll)
+      .intersectionRect(
+        testRect2.set(other.rect)
+          .translateByPos(other.scroll)
+      )
   }
   redrawOverlap(
     other: Dirty,
     c: CanvasRenderingContext2D,
-    pr: number) {
+    pr: number,
+    scroll: Point) {
     return this.overlapWith(other)
-      ?.drawImageNormalizePos(
+      ?.drawImageNormalizePosTranslated(
         other.owner.canvas.el,
         c,
         pr,
-        other.rect
+        testRect1.set(other.rect)
+          .translateByPos(other.scroll),
+        scroll
       )
   }
   clear(c: CanvasRenderingContext2D) {
-    return this.rect.clear(c)
+    testRect1 ??= $(new Rect)
+    return testRect1.set(this.rect)
+      .translateByPos(this.scroll)
+      .clear(c)
   }
 }

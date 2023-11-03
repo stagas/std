@@ -44,7 +44,7 @@ export abstract class Renderable {
   get its(): Renderable.It[] | undefined { return }
 
   @fx trigger_need_Init_on_size() {
-    const { init, pr, canvas } = of(this)
+    const { pr, canvas } = of(this)
     const { rect: { size: { x, y } } } = of(canvas)
     $()
     this.need |= Renderable.Need.Init

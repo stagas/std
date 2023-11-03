@@ -331,6 +331,11 @@ export class Rect extends Shape {
     c.clearRect(x, y, w, h)
     return this
   }
+  clearTranslated(c: CanvasRenderingContext2D, pos: PointLike) {
+    const { x, y, w, h } = this
+    c.clearRect(x + pos.x, y + pos.y, w, h)
+    return this
+  }
   path(c: CanvasRenderingContext2D) {
     const { x, y, w, h } = this
     c.rect(x, y, w, h)
@@ -441,6 +446,27 @@ export class Rect extends Shape {
     )
     return this
   }
+  drawImageNormalizePosTranslated(
+    canvas: HTMLCanvasElement,
+    c: CanvasRenderingContext2D,
+    pr: number,
+    pos: PointLike,
+    scroll: PointLike) {
+    this.pr = pr
+    const { x, y, w, h, w_pr, h_pr } = this
+    c.drawImage(
+      canvas,
+      (x - pos.x) * pr,
+      (y - pos.y) * pr,
+      w_pr,
+      h_pr,
+      x,
+      y,
+      w,
+      h
+    )
+    return this
+  }
   drawImageNormalizePosAndView(
     canvas: HTMLCanvasElement,
     c: CanvasRenderingContext2D,
@@ -514,7 +540,8 @@ export class Rect extends Shape {
   }
   @fn combineRects(rects: RectLike[], count?: number) {
     let i = 0
-    for (const r of rects) {
+    this.zero()
+    if (count) for (const r of rects) {
       this.combine(r)
       if (++i === count) break
     }

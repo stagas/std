@@ -2,100 +2,13 @@
 import { $, fn, fx, of } from 'signal'
 import { maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
 import { Animable } from './animable.ts'
+import { mergeRects } from './clip.ts'
 import { FixedArray } from './fixed-array.ts'
 import { Overlap } from './overlap.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
 import { World } from './world.ts'
-import { mergeRects } from './clip.ts'
-
-function clip(rectA: Rect, rectB: Rect) {
-  let rectangles = []
-
-  if (rectA.y < rectB.y) {
-    rectangles.push($(new Rect, { x: rectA.x, y: rectA.y, w: rectA.w, h: rectB.y - rectA.y }))
-  }
-  if (rectA.x < rectB.x) {
-    rectangles.push($(new Rect, { x: rectA.x, y: Math.max(rectA.y, rectB.y), w: rectB.x - rectA.x, h: Math.min(rectA.y + rectA.h, rectB.y + rectB.h) - Math.max(rectA.y, rectB.y) }))
-  }
-  if (rectA.x + rectA.w > rectB.x + rectB.w) {
-    rectangles.push($(new Rect, { x: rectB.x + rectB.w, y: Math.max(rectA.y, rectB.y), w: (rectA.x + rectA.w) - (rectB.x + rectB.w), h: Math.min(rectA.y + rectA.h, rectB.y + rectB.h) - Math.max(rectA.y, rectB.y) }))
-  }
-  if (rectA.y + rectA.h > rectB.y + rectB.h) {
-    rectangles.push($(new Rect, { x: rectA.x, y: rectB.y + rectB.h, w: rectA.w, h: (rectA.y + rectA.h) - (rectB.y + rectB.h) }))
-  }
-
-  return rectangles
-}
-
-function simplifyOverlappingRectangles(rectangles: Rect[]): Rect[] {
-  rectangles.sort((a, b) => a.x - b.x)
-
-  let simplifiedRects: Rect[] = []
-  let activeRects: Rect[] = []
-
-  for (let i = 0; i < rectangles.length; i++) {
-    let currentRect = rectangles[i]
-
-    // Remove rectangles that are to the left of the current rectangle
-    activeRects = activeRects.filter(rect => rect.x + rect.w > currentRect.x)
-
-    // Check for overlaps with the active rectangles
-    for (let j = 0; j < activeRects.length; j++) {
-      let overlapRect = activeRects[j]
-      if (currentRect.y < overlapRect.y + overlapRect.h && currentRect.y + currentRect.h > overlapRect.y) {
-        // The rectangles overlap, adjust the current rectangle
-        if (currentRect.y < overlapRect.y) {
-          currentRect.h = overlapRect.y - currentRect.y
-        } else {
-          currentRect.y = overlapRect.y + overlapRect.h
-          currentRect.h = (currentRect.y + currentRect.h) - (overlapRect.y + overlapRect.h)
-        }
-      }
-    }
-
-    // Add the current rectangle to the list of active rectangles
-    activeRects.push(currentRect)
-
-    // If the current rectangle still has height, add it to the simplified rectangles
-    if (currentRect.h > 0) {
-      simplifiedRects.push(currentRect)
-    }
-  }
-
-  return simplifiedRects
-}
-
-function simplifyRectangles(rects: Rect[]): Rect[] {
-  // Sort rectangles by x-coordinate
-  rects.sort((a, b) => a.x - b.x)
-
-  const results: Rect[] = []
-
-  for (let i = 0; i < rects.length - 1; i++) {
-    const a = rects[i]
-    const b = rects[i + 1]
-
-    let dx = a.right - b.x
-    if (dx > 0) {
-      console.log(dx)
-      if (a.w > dx) {
-        results.push(Rect.create().setParameters(
-          a.right,
-          a.y,
-          dx,
-          a.h,
-        ))
-        a.w -= dx
-      }
-    }
-    else {
-      results.push(a)
-    }
-  }
-  return results
-}
 
 export class Render
   implements Animable.It {
@@ -110,6 +23,7 @@ export class Render
   drawing = new Set<Renderable>()
   prev = new Set<Renderable>()
   overlaps = $(new FixedArray<Overlap>)
+  redraws = $(new FixedArray<Rect>)
 
   scroll = $(new Point)
   view = $(new Rect)
@@ -214,7 +128,6 @@ export class Render
 
         drawing.clear()
         scroll.zero()
-
 
         for (const r of prev) {
           if ((r.draw ?? r.canDirectDraw)) { //} && !drawing.has(r)) {
@@ -325,6 +238,7 @@ export class Render
           drawn,
           prev,
           overlaps,
+          redraws,
         } = it
 
         clearing.clear()
@@ -453,9 +367,9 @@ export class Render
           r.dirty.scroll.set(r.dirty.nextScroll)
 
           if (stationary.has(r)) {
-            overlaps.count = 0
-
-            const rects = []
+            redraws.count
+              = overlaps.count
+              = 0
 
             for (const other of drawn) {
               if (other === r) continue
@@ -471,16 +385,15 @@ export class Render
               if (overlap.update()) {
                 overlaps.count++
                 overlap.rect.clear(c)
-                rects.push(overlap.rect)
+                redraws.push(overlap.rect)
               }
             }
 
-
             for (let i = 0; i < r.dirty.redrawing.count; i++) {
               r.dirty.redrawing.array[i].clear(c)
-              rects.push(r.dirty.redrawing.array[i])
+              redraws.push(r.dirty.redrawing.array[i])
             }
-
+            r.dirty.redrawing.count = 0
 
             for (let i = 0, overlap: Overlap; i < overlaps.count; i++) {
               overlap = overlaps.array[i]
@@ -492,42 +405,11 @@ export class Render
                   .translateByPos(overlap.d1!.scroll),
                 overlap.d1!.scroll
               )
-              // rects.push(overlap.rect)
-              // r.dirty.redrawing.push(overlap.rect)
             }
 
-            // function simplify(overlaps: Rect[], count: number) {
-            //   for (let i = 0; i < count - 1; i++) {
-            //     const a = overlaps[i]
-            //     const b = overlaps[i + 1]
-            //     if (a.intersectsRect(b)) {
-            //       // Adjust the width of the first rectangle
-            //       a.w = b.x - a.x
-
-            //       // If the first rectangle completely encompasses the second one,
-            //       // adjust its height as well
-            //       if (a.y < b.y && a.y + a.h > b.y + b.h) {
-            //         a.h = b.y - a.y
-            //       }
-            //     }
-            //     a.stroke(c, '#0f0')
-            //   }
-            // }
-
-
-            const results = mergeRects(rects)
-            // rects.sort((a, b) => a.y - b.y)
-
-            // const results: Rect[] = []
-            // for (let i = 0; i < rects.length; i++) {
-            //   for (let j = 0; j < rects.length; j++) {
-            //     results.push(...clip(rects[i], rects[j]))
-            //   }
-            // }
-            // const results = simplifyRectangles(rects)
-
-            for (const rect of results) {
-              rect.drawImageNormalizePosTranslated(
+            const results = mergeRects(redraws.array, redraws.count)
+            for (let i = 0; i < results.count; i++) {
+              results.array[i].drawImageNormalizePosTranslated(
                 r.dirty.owner.canvas.el,
                 c,
                 pr,
@@ -535,36 +417,7 @@ export class Render
                   .translateByPos(r.dirty.scroll),
                 r.dirty.scroll
               )
-              // rect.stroke(c, '#' + randomHex())
             }
-
-
-            // for (let i = 0, overlap: Overlap; i < overlaps.count; i++) {
-            //   overlap = overlaps.array[i]
-            //   overlap.rect.drawImageNormalizePosTranslated(
-            //     overlap.d2!.owner.canvas.el,
-            //     c,
-            //     pr,
-            //     sr.set(overlap.d2!.rect)
-            //       .translateByPos(overlap.d2!.scroll),
-            //     overlap.d2!.scroll
-            //   )
-            //   // overlap.rect.stroke(c, '#0f0')
-            // }
-
-            // for (let i = 0; i < r.dirty.redrawing.count; i++) {
-            //   r.dirty.redrawing.array[i].drawImageNormalizePosTranslated(
-            //     r.dirty.owner.canvas.el,
-            //     c,
-            //     pr,
-            //     sr.set(r.dirty.rect)
-            //       .translateByPos(r.dirty.scroll),
-            //     r.dirty.scroll
-            //   )
-            // }
-
-            r.dirty.redrawing.count = 0
-
           }
           else {
             r.dirty.clear(c)

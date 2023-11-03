@@ -566,13 +566,20 @@ export class Rect extends Shape {
       )
     }
   }
-  intersectsRect(other: Rect, threshold = 0.75) {
-    return !(
-      this.bottom - threshold < other.top
-      || this.top + threshold > other.bottom
-      || this.right - threshold < other.left
-      || this.left + threshold > other.right
+  intersectsRect(r2: Rect) {
+    const r1 = this
+    return (
+      r1.x < r2.right &&
+      r1.right > r2.x &&
+      r1.y < r2.bottom &&
+      r1.bottom > r2.y
     )
+    // return !(
+    //   this.bottom - threshold < other.top
+    //   || this.top + threshold > other.bottom
+    //   || this.right - threshold < other.left
+    //   || this.left + threshold > other.right
+    // )
   }
   withinRect(other: Rect) {
     return this.left >= other.left

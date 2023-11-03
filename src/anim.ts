@@ -43,17 +43,17 @@ export class Anim {
     return this
   }
   @fx listen_its() {
-    if (this.isAnimating) return
+    if (!this.isAnimating && this.active) {
+      this.start()
+    }
+  }
+  get active() {
     this.updated
     let pass = 0
     for (const it of this.its) {
       pass |= it.animable.need
     }
-    if (pass) {
-      $()
-      this.start()
-      return
-    }
+    return pass
   }
   @fn removeAll() {
     this.its.splice(0)
@@ -80,7 +80,7 @@ export class Anim {
     const now = ms ?? performance.now()
     const dt = now - before
     this.now = now
-    let needNextTick: boolean | undefined
+    let needNextTick: boolean | undefined = !!this.active
 
     if (dt > maxDeltaTime) {
       this.animFrame = requestAnimationFrame(this.tick)
@@ -102,11 +102,14 @@ export class Anim {
     if (acc > step) {
       acc -= step
       for (const { animable: a } of its) {
-        if (a.need & Animable.Need.Tick) {
-          a.tick?.(dt)
+        if (a.tick && (a.need & Animable.Need.Tick) ) {
+          a.tick(dt)
           if (a.need & Animable.Need.Tick) {
             a.tickOne?.(dt)
           }
+        }
+        else {
+          a.need &= ~Animable.Need.Tick
         }
       }
     }
@@ -121,8 +124,10 @@ export class Anim {
     const t = clamp(0, 1, (this.acc = acc) / step)
 
     for (const { animable: a } of its) {
-      a.need & Animable.Need.Init && a.init?.()
-      a.need & Animable.Need.Draw && a.draw?.(t)
+      if (a.init) a.need & Animable.Need.Init && a.init()
+      else a.need &= ~Animable.Need.Init
+      if (a.draw) a.need & Animable.Need.Draw && a.draw(t)
+      else a.need &= ~Animable.Need.Draw
     }
 
     for (const { animable: a } of its) {
@@ -132,7 +137,7 @@ export class Anim {
       }
     }
 
-    if (needNextTick) {
+    if (needNextTick || this.active) {
       this.state = State.Animating
       this.animFrame = requestAnimationFrame(this.tick)
     }

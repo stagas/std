@@ -37,7 +37,7 @@ export class Pointer {
       on(el, 'contextmenu', h),
       on(window, 'mouseup', h),
       on(window, 'mousemove', h),
-      on(window, 'pointermove', h),
+      // on(window, 'pointermove', h),
       on(document, 'mouseleave', h),
     ]
   }
@@ -86,12 +86,12 @@ export class Pointer {
   @fn handler = (real: PointerLikeEvent) => {
     dom.stop(real)
 
-    if (this.world.anim.isAnimating) {
-      if (real.type === 'mousemove') return
-    }
-    else {
+    // if (this.world.anim.isAnimating) {
+      // if (real.type === 'mousemove') return
+    // }
+    // else {
       if (real.type === 'pointermove') return
-    }
+    // }
 
     this.real = real
 
@@ -116,7 +116,7 @@ export class Pointer {
       case 'mouseup':
       case 'mouseleave':
 
-      case 'pointermove':
+      // case 'pointermove':
       case 'pointerdown':
       case 'pointerup':
       case 'pointerleave':

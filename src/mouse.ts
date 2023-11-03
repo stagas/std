@@ -60,7 +60,14 @@ export class Mouse extends Scene {
   }
   *traverseGetItAtPoint(it: Mouseable.It): Generator<Mouseable.It> {
     const { renderable: r, mouseable: m } = it
+    const { downIt } = this
     const { pointer: { pos }, scroll } = of(this)
+
+    if (it === downIt) {
+      downIt.mouseable.mouse.pos.set(pos).sub(scroll)
+      yield downIt
+      return
+    }
 
     if (r.scroll) scroll.add(r.scroll)
 
@@ -73,20 +80,13 @@ export class Mouse extends Scene {
 
     let item: Mouseable.It | false | undefined
     if (item = m.getItAtPoint(m.mouse.pos.set(pos).sub(scroll))) {
-      yield item
+      if (!downIt) yield item
     }
   }
   *getItsUnderPointer(it: Mouseable.It) {
-    const { pointer: { pos }, scroll } = of(this)
-    const { downIt } = this
+    const { scroll } = of(this)
 
     scroll.zero()
-
-    // the down It is always the first under the pointer.
-    // if (downIt) {
-    //   downIt.mouseable.mouse.pos.set(pos)
-    //   yield downIt
-    // }
 
     yield* this.traverseGetItAtPoint(it)
   }
@@ -138,6 +138,8 @@ export class Mouse extends Scene {
     for (const it of its) {
       const { mouseable: m } = it
 
+      log('It', it, m.canHover)
+
       if (m.canHover) {
         if (!i++ && this.hoverIt !== it) {
           this.hoverIt = it
@@ -166,8 +168,8 @@ export class Mouse extends Scene {
         case Up:
           if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
             m.onMouseEvent?.(Click)
+            handled = true
           }
-          handled = true
           break
       }
 

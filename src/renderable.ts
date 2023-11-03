@@ -38,8 +38,8 @@ export abstract class Renderable {
   public init?(c: CanvasRenderingContext2D): void
   public render?(c: CanvasRenderingContext2D, t: number, clear: boolean): void
   public draw?(c: CanvasRenderingContext2D, t: number, scroll: Point): void
-  public before?(c: CanvasRenderingContext2D): void
-  public after?(c: CanvasRenderingContext2D): void
+  // public before?(c: CanvasRenderingContext2D): void
+  // public after?(c: CanvasRenderingContext2D): void
 
   get its(): Renderable.It[] | undefined { return }
 

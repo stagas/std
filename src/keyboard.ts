@@ -7,7 +7,7 @@ import { World } from './world.ts'
 export class Keyboard {
   constructor(public world: World) { }
 
-  focusIt?: Keyboardable.It
+  focusIt?: Keyboardable.It | null
   isFocused = false
 
   real?: KeyboardEvent

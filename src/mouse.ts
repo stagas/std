@@ -39,17 +39,21 @@ export class Mouse extends Scene {
       m.isDown = false
     }
   }
-  @fx update_it_mouseable_isFocused() {
+  @fx update_it_mouseable_focusIt() {
     const { downIt: { mouseable: m } } = when(this)
     $()
     if (m.canFocus) {
-      if (this.focusIt) {
-        this.focusIt.mouseable.isFocused = false
-        this.focusIt.mouseable.onMouseEvent?.(Blur)
-      }
-      m.isFocused = true
-      m.onMouseEvent?.(Focus)
       this.focusIt = this.downIt
+    }
+  }
+  @fx update_it_mouseable_isFocused() {
+    const { focusIt: { mouseable: m } } = when(this)
+    $()
+    m.isFocused = true
+    m.onMouseEvent?.(Focus)
+    return () => {
+      m.isFocused = false
+      m.onMouseEvent?.(Blur)
     }
   }
   @fx update_it_mouseable_isHovering() {

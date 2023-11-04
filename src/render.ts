@@ -55,7 +55,7 @@ export class Render
     const { scroll } = this
     for (const it of its) {
       const { renderable: r } = it
-      r.dirty.index = this.index.value++
+      if (r.dirty) r.dirty.index = this.index.value++
       // r.dirty.depth = depth
       if (c && r.scroll) {
         // r.before?.(c)
@@ -142,7 +142,7 @@ export class Render
         scroll.zero()
 
         for (const r of prev) {
-          if ((r.draw ?? r.canDirectDraw)) { //} && !drawing.has(r)) {
+          if (r.renders) { //} && !drawing.has(r)) {
             r.dirty.clear(c)
             // r.isVisible = false
             // r.need = 0
@@ -176,7 +176,7 @@ export class Render
           }
 
           r.dirty.scroll.set(scroll)
-          drawing.add(r)
+          if (r.renders) drawing.add(r)
         }
 
         // for (const r of drawing) {
@@ -187,7 +187,7 @@ export class Render
 
 
         for (const r of prev) {
-          if ((r.draw ?? r.canDirectDraw) && !drawing.has(r)) {
+          if (r.renders && !drawing.has(r)) {
             // r.dirty.clear(c)
             r.isVisible = false
             r.need = 0

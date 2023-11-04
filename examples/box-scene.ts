@@ -14,7 +14,6 @@ export class BoxScene extends Scene
   get renderable() {
     $()
     const it = this
-    const { canvas } = of(it.ctx.world)
     class BoxSceneRenderable extends Renderable {
       scroll = $(new Point)
       get its() {
@@ -22,11 +21,7 @@ export class BoxScene extends Scene
         return [...fixedBoxes, ...boxes]
       }
     }
-    return $(new BoxSceneRenderable(
-      it as Renderable.It,
-      canvas.rect,
-      canvas,
-    ))
+    return $(new BoxSceneRenderable(it as Renderable.It, false))
   }
   get animable() {
     $()

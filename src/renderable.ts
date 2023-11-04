@@ -1,5 +1,5 @@
 // log.active
-import { $, fx, of } from 'signal'
+import { $, fx, nu, of, when } from 'signal'
 import { Canvas } from './canvas.ts'
 import { Dirty } from './dirty.ts'
 import { Point } from './point.ts'
@@ -18,12 +18,17 @@ export abstract class Renderable {
   // features
   canDirectDraw?: boolean
   scroll?: $<Point>
-  dirty = new Dirty(this)
+  @nu get dirty() {
+    const { renders } = when(this)
+    $()
+    return new Dirty(this)
+  }
 
   constructor(
     public it: Renderable.It,
-    public rect = $(new Rect),
-    public canvas = $(new Canvas(it.ctx.world, rect)),
+    public renders = true,
+    public rect = renders ? $(new Rect) : it.ctx.world.canvas!.rect,
+    public canvas = renders ? $(new Canvas(it.ctx.world, rect)) : it.ctx.world.canvas!,
     public view = rect,
     public pr = it.ctx.world.screen.$.pr,
     public prRecip = it.ctx.world.screen.$.prRecip,
@@ -44,10 +49,12 @@ export abstract class Renderable {
   get its(): Renderable.It[] | undefined { return }
 
   @fx trigger_need_Init_on_size() {
+    const { renders } = when(this)
     const { pr, canvas } = of(this)
     const { rect: { size: { x, y } } } = of(canvas)
     $()
     this.need |= Renderable.Need.Init
+    log('It', this.it)
   }
 }
 

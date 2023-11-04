@@ -166,18 +166,13 @@ export class BallScene extends Scene
   get renderable() {
     $()
     const it = this
-    const { canvas } = of(it.ctx.world)
     class BallsSceneRenderable extends Renderable {
       @nu get its() {
         const { balls } = of(it)
         return balls
       }
     }
-    return $(new BallsSceneRenderable(
-      it as Renderable.It,
-      canvas.rect,
-      canvas
-    ))
+    return $(new BallsSceneRenderable(it as Renderable.It, false))
   }
   get animable() {
     $()

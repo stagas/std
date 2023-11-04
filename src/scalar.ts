@@ -2,6 +2,7 @@ import { $ } from 'signal'
 import { clamp } from 'utils'
 
 export class Scalar {
+  static create() { return $(new Scalar) }
   min = 0
   max = 1
   fixed = 1

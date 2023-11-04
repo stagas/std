@@ -10,14 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "plenty-themes": "file:../plenty-themes",
+    "plenty-themes": "*",
     "signal": "file:../signal",
     "utils": "file:../utils"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "*",
-    "@types/jest": "*",
-    "parse-trace": "file:../parse-trace",
-    "ts": "file:../parse-trace"
+    "@types/jest": "*"
   }
 }

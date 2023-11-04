@@ -103,14 +103,9 @@ export class Anim {
     if (acc > step) {
       acc -= step
       for (const { animable: a } of its) {
-        if (a.tick && (a.need & Animable.Need.Tick) ) {
-          a.tick(dt)
-          if (a.need & Animable.Need.Tick) {
-            a.tickOne?.(dt)
-          }
-        }
-        else {
-          a.need &= ~Animable.Need.Tick
+        if (a.need & Animable.Need.Tick) {
+          a.tick?.(dt)
+          a.tickOne?.(dt)
         }
       }
     }

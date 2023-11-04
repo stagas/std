@@ -1,4 +1,4 @@
-log.active
+// log.active
 import { $, fn, fx, of } from 'signal'
 import { maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
 import { Animable } from './animable.ts'

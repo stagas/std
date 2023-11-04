@@ -269,8 +269,8 @@ export class Render
               // r.need = 0
             }
           }
-          // prev.clear()
-          // rect.clear(c)
+          // // prev.clear()
+          // // rect.clear(c)
           for (const { renderable: r } of Renderable.traverse(it.its)) {
             r.need |= Renderable.Need.Init
           }
@@ -322,7 +322,7 @@ export class Render
           // schedule renderables to draw
           if (r.draw) {
             if (
-              // if renderable requested Draw
+              // or if renderable requested Draw
               (r.need & Renderable.Need.Draw)
               // or its scroll changed
               || !r.dirty.scroll.equals(scroll)
@@ -360,6 +360,7 @@ export class Render
         // gather overlaps with what has cleared and
         // the stationary items, so they are redrawn
         for (const other of clearing) {
+          // don't compose if we don't have render
           for (const r of stationary) {
             if (other === r) continue
             // if (other.dirty.index <= r.dirty.index) continue

@@ -61,10 +61,11 @@ export abstract class Mouseable {
   }
 
   @fx clamp_pos() {
+    const { it: { ctx: { world: { screen: { rect }}}} } = this
     const { pos, clampedPos } = this.mouse
     const { x, y } = pos
     $()
-    clampedPos.set(pos).contain(this.hitArea)
+    clampedPos.set(pos).contain(rect)
   }
   public onMouseEvent?(kind: Mouse.EventKind): true | undefined | void
 }

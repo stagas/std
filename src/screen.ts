@@ -1,6 +1,7 @@
 import { $, fx, unwrap } from 'signal'
 import { dom, on } from 'utils'
 import { Point } from './point.ts'
+import { Rect } from './rect.ts'
 
 export class Screen {
   _viewport = $(new Point)
@@ -10,6 +11,9 @@ export class Screen {
     _viewport.w = window.innerWidth
     _viewport.h = window.innerHeight
     return _viewport
+  }
+  get rect() {
+    return $(new Rect(this.viewport))
   }
   pr = unwrap(
     on(window, 'resize', { unsafeInitial: true }),

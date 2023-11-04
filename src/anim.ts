@@ -45,6 +45,7 @@ export class Anim {
   @fx listen_its() {
     if (!this.isAnimating && this.active) {
       this.start()
+      return
     }
   }
   get active() {
@@ -56,7 +57,7 @@ export class Anim {
     return pass
   }
   @fn removeAll() {
-    this.its.splice(0)
+    this.its = []
     return this
   }
   @fn start() {

@@ -1,5 +1,5 @@
 // log.active
-import { $, fx, nu, of, when } from 'signal'
+import { $, fx, nu, of, when, whenNot } from 'signal'
 import { MouseButton } from 'utils'
 import { DOUBLE_CLICK_MS, SINGLE_CLICK_MS } from './constants.ts'
 import { Mouseable } from './mouseable.ts'
@@ -22,6 +22,14 @@ export class Mouse extends Scene {
   focusIt?: Mouseable.It | null | undefined
   downIt?: Mouseable.It | null | undefined
 
+  @fx prevent_downIt_invisible() {
+    const { downIt } = when(this)
+    $()
+    return fx(() => {
+      const { isVisible } = whenNot(downIt.renderable)
+      downIt.renderable.isVisible = true
+    })
+  }
   @fx update_it_mouseable_isDown() {
     const { downIt: { mouseable: m } } = when(this)
     $()
@@ -58,22 +66,26 @@ export class Mouse extends Scene {
       }
     }
   }
-  *traverseGetItAtPoint(it: Mouseable.It): Generator<Mouseable.It> {
+  *traverseGetItAtPoint(it: Mouseable.It, downIt?: Mouseable.It | null | undefined): Generator<Mouseable.It> {
     const { renderable: r, mouseable: m } = it
-    const { downIt } = this
     const { pointer: { pos }, scroll } = of(this)
 
+    // First find the downIt and its scroll, if given,
+    // and yield that before everything else.
     if (it === downIt) {
       downIt.mouseable.mouse.pos.set(pos).sub(scroll)
       yield downIt
+      yield* this.getItsUnderPointer(this.it)
       return
     }
 
     if (r.scroll) scroll.add(r.scroll)
 
     if (m.its) for (const curr of m.its) {
-      if (!curr.mouseable.it.renderable.isVisible) continue
-      yield* this.traverseGetItAtPoint(curr)
+      if (!curr.mouseable.it.renderable.isVisible) {
+        continue
+      }
+      yield* this.traverseGetItAtPoint(curr, downIt)
     }
 
     if (r.scroll) scroll.sub(r.scroll)
@@ -83,12 +95,10 @@ export class Mouse extends Scene {
       if (!downIt) yield item
     }
   }
-  *getItsUnderPointer(it: Mouseable.It) {
+  *getItsUnderPointer(it: Mouseable.It, downIt?: Mouseable.It | null | undefined) {
     const { scroll } = of(this)
-
     scroll.zero()
-
-    yield* this.traverseGetItAtPoint(it)
+    yield* this.traverseGetItAtPoint(it, downIt)
   }
   @fx handle_pointer_event() {
     const { it, ctx, pointer } = of(this)
@@ -99,7 +109,9 @@ export class Mouse extends Scene {
 
     const kind = PointerEventMap[type]
 
-    log(Mouse.EventKind[kind])
+    log(Mouse.EventKind[kind], pointer.pos.text)
+
+    log('downIt', downIt, downIt?.renderable.isVisible)
 
     switch (kind) {
       case Down:
@@ -126,15 +138,16 @@ export class Mouse extends Scene {
         break
 
       case Leave:
-        if (downIt) break
-        this.hoverIt
-          = this.downIt
-          = null
+        if (!downIt) {
+          this.hoverIt = null
+        }
         return
     }
 
     let i = 0
-    const its = this.getItsUnderPointer(it)
+
+    const its = this.getItsUnderPointer(it, this.downIt)
+
     for (const it of its) {
       const { mouseable: m } = it
 

@@ -1,8 +1,9 @@
-import { $, of } from 'signal'
+import { $, fx, of } from 'signal'
 import { Keyboardable } from './keyboardable.ts'
 import { Mouse } from './mouse.ts'
 import { Point } from './point.ts'
 import { Renderable } from './renderable.ts'
+import { Rect } from './rect.ts'
 
 export abstract class Mouseable {
   static *traverse(its: Mouseable.It[]): Generator<Mouseable.It> {
@@ -49,6 +50,7 @@ export abstract class Mouseable {
       buttons: p.$.buttons,
       wheel: p.$.wheel,
       pos: $(new Point),
+      clampedPos: $(new Point),
       downPos: $(new Point),
       downCount: m.$.downCount,
       downTime: m.$.downTime,
@@ -58,6 +60,12 @@ export abstract class Mouseable {
     })
   }
 
+  @fx clamp_pos() {
+    const { pos, clampedPos } = this.mouse
+    const { x, y } = pos
+    $()
+    clampedPos.set(pos).contain(this.hitArea)
+  }
   public onMouseEvent?(kind: Mouse.EventKind): true | undefined | void
 }
 
@@ -66,7 +74,7 @@ export namespace Mouseable {
     mouseable: Mouseable
     keyboardable?: Keyboardable
   }
-  export interface HitArea {
+  export interface HitArea extends Rect {
     isPointWithin(p: Point): boolean
   }
 }

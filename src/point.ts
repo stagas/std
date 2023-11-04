@@ -411,6 +411,13 @@ export class Point extends Shape {
   withinRect(r: Rect) {
     return r.isPointWithin(this)
   }
+  contain(rect: Rect) {
+    if (this.x < rect.left) this.x = rect.left
+    else if (this.x > rect.right) this.x = rect.right
+    if (this.y < rect.top) this.y = rect.top
+    else if (this.y > rect.bottom) this.y = rect.bottom
+    return this
+  }
   touchPoint(other: Rect, center?: PointLike) {
     center ??= other.center
     // const self = this instanceof Rect ? this : new Point(1, 1)

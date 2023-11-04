@@ -1,4 +1,4 @@
-// log.active
+log.active
 import { $, fn, fx, of } from 'signal'
 import { maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
 import { Animable } from './animable.ts'
@@ -62,13 +62,25 @@ export class Render
         scroll.add(r.scroll).round()
         if (r.its) yield* this.traverse(r.its, c) //, depth + 1)
         scroll.sub(r.scroll).round()
-        yield it as any
+        if (r.draw || r.render || r.init) {
+          yield it as any
+        }
+        else {
+          r.need = 0
+          r.isVisible = true
+        }
         // r.after?.(c)
       }
       else {
         // if (c) r.before?.(c)
         if (r.its) yield* this.traverse(r.its, c) //, depth + 1)
-        yield it as any
+        if (r.draw || r.render || r.init) {
+          yield it as any
+        }
+        else {
+          r.need = 0
+          r.isVisible = true
+        }
         // if (c) r.after?.(c)
       }
     }
@@ -195,7 +207,7 @@ export class Render
             r.dirty.rect.set(r.view)
             // always need the renderable to re-init/render
             // after the direct draws finish.
-            // r.need |= Renderable.Need.Init // | Renderable.Need.Draw
+            r.need |= Renderable.Need.Init
           }
           else {
             this.initRender(r, t)
@@ -203,7 +215,7 @@ export class Render
             if (r.draw) {
               r.draw(c, t, r.dirty.scroll)
               r.dirty.rect.set(r.view)
-              // r.need |= Renderable.Need.Init //Render | Renderable.Need.Draw
+              r.need |= Renderable.Need.Init //Render | Renderable.Need.Draw
             }
             else {
               r.need &= ~Renderable.Need.Draw
@@ -252,7 +264,7 @@ export class Render
           // visible.clear(c)
           for (const r of prev) {
             if ((r.draw ?? r.canDirectDraw)) { //} && !drawing.has(r)) {
-              r.dirty.clear(c).stroke(c, '#' + randomHex())
+              r.dirty.clear(c) //.stroke(c, '#' + randomHex())
               // r.isVisible = false
               // r.need = 0
             }
@@ -441,6 +453,9 @@ export class Render
 
         if (!this.active) {
           this.need &= ~Animable.Need.Draw
+        }
+        else {
+          console.log('NEEDDDD')
         }
       }
     }

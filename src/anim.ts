@@ -32,12 +32,12 @@ export class Anim {
   get isAnimating() {
     return this.state
   }
-  @fn add(it: Animable.It) {
+  @fn add = (it: Animable.It) => {
     maybePush(this.its, it)
     this.updated++
     return this
   }
-  @fn remove(it: Animable.It) {
+  @fn remove = (it: Animable.It) => {
     maybeSplice(this.its, it)
     this.updated++
     return this

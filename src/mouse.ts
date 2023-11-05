@@ -175,7 +175,9 @@ export class Mouse extends Scene {
       if (m.onMouseEvent?.(kind)) {
         switch (kind) {
           case Down:
-            this.downIt = it
+            if (pointer.button === MouseButton.Left) {
+              this.downIt = it
+            }
             break
         }
         handled = true
@@ -184,8 +186,10 @@ export class Mouse extends Scene {
       switch (kind) {
         case Up:
           if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
-            m.onMouseEvent?.(Click)
-            handled = true
+            if (pointer.button === MouseButton.Left) {
+              m.onMouseEvent?.(Click)
+              handled = true
+            }
           }
           break
       }

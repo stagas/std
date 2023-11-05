@@ -106,6 +106,10 @@ export class Pointer {
     event.timeStamp = real.timeStamp || performance.now()
 
     switch (real.type) {
+      case 'contextmenu':
+        dom.prevent(real)
+        break
+
       case 'wheel':
         event.deltaX = real.deltaX
         event.deltaY = real.deltaY

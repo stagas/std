@@ -44,6 +44,7 @@ export abstract class Mouseable {
     const { mouse: m, pointer: p } = of(this.it.ctx.world)
     return $({
       real: p.$.real,
+      time: p.$.time,
       alt: p.$.alt,
       ctrl: p.$.ctrl,
       shift: p.$.shift,

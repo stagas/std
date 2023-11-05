@@ -14,6 +14,7 @@ const enum State {
 export class Anim {
   its: Animable.It[] = []
   state = State.Idle
+  isPaused = false
   speed = 1
   fps = 60
   acc = 0
@@ -28,6 +29,24 @@ export class Anim {
   }
   get maxDeltaTime() {
     return this.step * 5
+  }
+  pause() {
+    this.isPaused = true
+    return this
+  }
+  resume() {
+    this.isPaused = false
+    this.tick()
+    return this
+  }
+  toggle() {
+    if (this.isPaused) {
+      this.resume()
+    }
+    else {
+      this.pause()
+    }
+    return this
   }
   get isAnimating() {
     return this.state
@@ -75,6 +94,8 @@ export class Anim {
     return this
   }
   @fn tick = (ms?: number) => {
+    if (this.isPaused) return
+
     const { state, its, step, maxDeltaTime, now: before } = this
     let { acc } = this
 

@@ -364,7 +364,7 @@ export class Rect extends Shape {
     return this
   }
   drawImage(
-    canvas: HTMLCanvasElement,
+    canvas: HTMLCanvasElement | HTMLImageElement,
     c: CanvasRenderingContext2D,
     pr = 1,
     normalize = false) {

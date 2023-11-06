@@ -101,6 +101,7 @@ export class Render
 class RenderAnimable extends Animable {
   _tempRect = $(new Rect)
   need = Animable.Need.Init
+  debug = false
   constructor(public it: Render) { super(it) }
   get active() {
     const { it } = this
@@ -124,8 +125,8 @@ class RenderAnimable extends Animable {
     r.need |= Renderable.Need.Render
     r.didInit = true
   }
-  @fn rRender(r: Renderable, c: CanvasRenderingContext2D, t: number) {
-    r.render?.(c, t)
+  @fn rRender(r: Renderable, c: CanvasRenderingContext2D, t: number, scroll: Point) {
+    r.render?.(c, t, scroll)
     r.need &= ~Renderable.Need.Render
     r.need |= Renderable.Need.Draw
     // r.view.stroke(c, '#' + randomHex())
@@ -134,7 +135,7 @@ class RenderAnimable extends Animable {
   @fn rDraw(r: Renderable, c: CanvasRenderingContext2D, t: number) {
     const { it } = this
     const { scroll } = it
-    r.draw?.(c, t, scroll)
+    r.draw?.(c, t, r.dirty.scroll)
     r.need &= ~Renderable.Need.Draw
     r.didDraw = true
   }
@@ -142,7 +143,9 @@ class RenderAnimable extends Animable {
     // if (r.it.constructor.name === 'Text') {
     //   colory('Text', r.dirty.rect.text)
     // }
+
     r.clear(c)
+    // r.dirty.rect.stroke(c, '#' + randomHex())
     r.need &= ~Renderable.Need.Clear
   }
   @fn rScheduleClear(d: Dirty) {
@@ -156,8 +159,12 @@ class RenderAnimable extends Animable {
       r.need |= Renderable.Need.Paint
     }
   }
-  @fn rDirtyUpdate(r: Renderable) {
+  @fn rDirtyUpdate(r: Renderable, c: CanvasRenderingContext2D) {
     r.dirty.rect.set(r.view)
+
+    // debug rect
+    if (this.debug) r.dirty.rect.stroke(c, '#' + randomHex())
+
     this.it.current.push(r.dirty)
   }
   @fn rUpdateVisibleAndScroll(r: Renderable) {
@@ -185,19 +192,38 @@ class RenderAnimable extends Animable {
       }
     }
 
-    r.dirty.nextScroll.set(scroll)
+    if (!r.dirty.nextScroll.equals(scroll)) {
+      r.dirty.nextScroll.set(scroll)
+      r.need |= Renderable.Need.Paint | Renderable.Need.Clear
+    }
     return true
   }
+  last?: Renderable | null
   @fn rDirectDraw(r: Renderable, c: CanvasRenderingContext2D, t: number) {
     const { it } = this
     const { scroll } = it
 
+    // c.save()
+    if (r.constructor !== this.last?.constructor) {
+      c.restore()
+      c.save()
+      this.rInit(r, c)
+    }
+
+    if (!this.last || !r.dirty.scroll.equals(this.last.dirty.scroll)) {
+      // c.restore()
+      // c.save()
+    }
+
     c.save()
-    this.rInit(r, c)
-    r.view.pos.translate(c)
     r.dirty.scroll.translate(c)
-    this.rRender(r, c, t)
+    r.view.pos.translate(c)
+    this.rRender(r, c, t, r.dirty.scroll)
     c.restore()
+    // c.save()
+
+    this.last = r
+    // c.restore()
 
     r.need &= ~Renderable.Need.Draw
     r.didDraw = true
@@ -215,17 +241,17 @@ class RenderAnimable extends Animable {
     if (r.preferDirectDraw) {
       if (r.need & Renderable.Need.Render) {
         this.rDirectDraw(r, c, t)
-        this.rDirtyUpdate(r)
+        this.rDirtyUpdate(r, c)
       }
     }
     else {
       if (r.need & Renderable.Need.Render) {
         r.rect.size.clear(r.canvas.c)
-        this.rRender(r, r.canvas.c, t)
+        this.rRender(r, r.canvas.c, t, r.dirty.scroll)
       }
       if (r.need & Renderable.Need.Draw) {
         this.rDraw(r, c, t)
-        this.rDirtyUpdate(r)
+        this.rDirtyUpdate(r, c)
       }
     }
   }
@@ -252,12 +278,17 @@ class RenderAnimable extends Animable {
 
     current.count = 0
 
+    this.last = null
+
+    c.save()
+
+    c.save()
     // -- prepare
 
     // schedule clearing
-    for (const d of previous.values()) {
-      this.rScheduleClear(d)
-    }
+    // for (const d of previous.values()) {
+    //   this.rScheduleClear(d)
+    // }
 
     // update visibility and scroll and schedule drawing
     for (const { renderable: r } of it.traverse(it.its, c)) {
@@ -266,16 +297,23 @@ class RenderAnimable extends Animable {
 
     //-- do
 
-    for (const { renderable: r } of Renderable.traverse(it.its)) {
-      if (r.need & Renderable.Need.Clear) {
-        this.rClear(r, c)
-      }
-    }
+    // for (const { renderable: r } of Renderable.traverse(it.its)) {
+    //   if (r.need & Renderable.Need.Clear) {
+    //     this.rClear(r, c)
+    //   }
+    // }
 
     for (const { renderable: r } of Renderable.traverse(it.its)) {
       if (r.need & Renderable.Need.Paint) {
         this.rPaint(r, c, t)
       }
+    }
+
+    // -- reset state
+
+    if (this.last) {
+      c.restore()
+      c.restore()
     }
 
     // -- prepare for next

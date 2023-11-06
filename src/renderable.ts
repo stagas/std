@@ -46,7 +46,7 @@ export abstract class Renderable {
   need = Renderable.Need.Idle
 
   public init?(c: CanvasRenderingContext2D): void
-  public render?(c: CanvasRenderingContext2D, t: number): void
+  public render?(c: CanvasRenderingContext2D, t: number, scroll: Point): void
   public draw?(c: CanvasRenderingContext2D, t: number, scroll: Point): void
   @fn clear(c: CanvasRenderingContext2D) {
     this.dirty.clear(c)

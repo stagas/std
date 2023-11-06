@@ -44,10 +44,16 @@ export class Dirty {
       )
   }
   clear(c: CanvasRenderingContext2D) {
-    testRect1 ??= $(new Rect)
-    return testRect1.set(this.rect)
-      .translateByPos(this.scroll)
-      .clear(c)
+    // testRect1 ??= $(new Rect)
+    c.save()
+    this.scroll.translate(c)
+    this.rect.clear(c)
+    c.restore()
+    return this.rect
+
+    // return testRect1.set(this.rect)
+    //   .translateByPos(this.scroll)
+    //   .clear(c)
   }
   fill(c: CanvasRenderingContext2D, color: string) {
     testRect1 ??= $(new Rect)

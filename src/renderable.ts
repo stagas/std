@@ -1,5 +1,5 @@
 // log.active
-import { $, fx, nu, of, when } from 'signal'
+import { $, fn, fx, nu, of, when } from 'signal'
 import { Canvas } from './canvas.ts'
 import { Dirty } from './dirty.ts'
 import { Point } from './point.ts'
@@ -17,6 +17,8 @@ export abstract class Renderable {
 
   // features
   canDirectDraw?: boolean
+  preferDirectDraw?: boolean
+
   scroll?: $<Point>
   @nu get dirty() {
     const { renders } = when(this)
@@ -36,15 +38,19 @@ export abstract class Renderable {
 
   isVisible?: boolean
   isHidden?: boolean
-  didDraw?: boolean
+
+  didInit = false
+  didRender = false
+  didDraw = false
 
   need = Renderable.Need.Idle
 
   public init?(c: CanvasRenderingContext2D): void
-  public render?(c: CanvasRenderingContext2D, t: number, clear: boolean): void
+  public render?(c: CanvasRenderingContext2D, t: number): void
   public draw?(c: CanvasRenderingContext2D, t: number, scroll: Point): void
-  // public before?(c: CanvasRenderingContext2D): void
-  // public after?(c: CanvasRenderingContext2D): void
+  @fn clear(c: CanvasRenderingContext2D) {
+    this.dirty.clear(c)
+  }
 
   get its(): Renderable.It[] | undefined { return }
 
@@ -63,9 +69,11 @@ export namespace Renderable {
     renderable: Renderable
   }
   export const enum Need {
-    Idle = 0,
-    Init = 1 << 0,
+    Idle   = 0,
+    Init   = 1 << 0,
     Render = 1 << 1,
-    Draw = 1 << 2,
+    Draw   = 1 << 2,
+    Clear  = 1 << 3,
+    Paint  = 1 << 4,
   }
 }

@@ -5,7 +5,12 @@ import { partialIncludes, partialSort, poolArrayGet } from 'utils'
 export class FixedArray<T> {
   array: T[] = []
   count = 0
-  updated = 0
+  updated = 0;
+  *values() {
+    for (let i = 0; i < this.count; i++) {
+      yield this.array[i]
+    }
+  }
   get(i: number, factory: () => T) {
     return poolArrayGet(this.array, i, factory)
   }

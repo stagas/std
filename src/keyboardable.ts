@@ -7,7 +7,7 @@ export abstract class Keyboardable {
     public kbd = it.ctx.world.keyboard!,
   ) { }
   isFocused = false
-  public onKeyboardEvent?(kind: Keyboard.EventKind): true | string | undefined | void
+  public onKeyboardEvent?(kind: Keyboard.EventKind): Keyboard.Result
 }
 
 export namespace Keyboardable {

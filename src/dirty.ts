@@ -49,4 +49,10 @@ export class Dirty {
       .translateByPos(this.scroll)
       .clear(c)
   }
+  fill(c: CanvasRenderingContext2D, color: string) {
+    testRect1 ??= $(new Rect)
+    return testRect1.set(this.rect)
+      .translateByPos(this.scroll)
+      .fill(c, color)
+  }
 }

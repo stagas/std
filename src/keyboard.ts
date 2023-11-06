@@ -182,6 +182,7 @@ export class Keyboard {
 }
 
 export namespace Keyboard {
+  export type Result = string | true | void | undefined
   export enum EventKind {
     Down,
     Up,

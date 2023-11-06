@@ -1,4 +1,4 @@
-log.active
+// log.active
 import { $, fn, fx, nu, of, when } from 'signal'
 import { array, randomHex } from 'utils'
 import { Animable } from '../src/animable.ts'
@@ -268,8 +268,13 @@ class BallSceneAnimable extends Animable {
       ball.circle.lerpPos.p2.set(ball.pos)
     }
   }
-  // @fn draw() {
-  //   // world.canvas!.clear()
-  //   // world.render.draw()
-  // }
+  @fn draw() {
+    const { balls } = this.it
+
+    for (const ball of balls) {
+      ball.renderable.need |= Renderable.Need.Draw
+    }
+    // world.canvas!.clear()
+    // world.render.draw()
+  }
 }

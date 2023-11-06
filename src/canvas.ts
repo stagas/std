@@ -14,6 +14,7 @@ export class Canvas {
   ) { }
 
   fullWindow?: boolean
+  alpha = true
 
   style?: CSSStyleDeclaration
 
@@ -27,7 +28,7 @@ export class Canvas {
   })
 
   get c() {
-    return this.el.getContext('2d')!
+    return this.el.getContext('2d', { alpha: this.alpha })!
   }
 
   @fx resize_to_window() {
@@ -49,6 +50,8 @@ export class Canvas {
     $.untrack(() => {
       assign(style, p.set(size).widthHeightPx)
     })
+
+    this.fill()
   }
 
   appendTo(el: HTMLElement) {

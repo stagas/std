@@ -16,7 +16,7 @@ import { Box } from './box.ts'
 export class Sink extends Scene
   implements Renderable.It, Mouseable.It {
   get balls() {
-    $(); return $(new BallScene(this.ctx), { count: 50 })
+    $(); return $(new BallScene(this.ctx), { count: 2 })
   }
   get fixedBoxes() {
     $(); return $(new BoxScene(this.ctx), { speed: 0 })

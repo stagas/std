@@ -4,7 +4,7 @@ import { Mouseable } from './mouseable.ts'
 export abstract class Keyboardable {
   constructor(
     public it: Keyboardable.It,
-    public kbd = it.ctx.world.keyboard!,
+    public keypress = it.ctx.world.keyboard!,
   ) { }
   isFocused = false
   public onKeyboardEvent?(kind: Keyboard.EventKind): Keyboard.Result

@@ -20,6 +20,7 @@ export abstract class Renderable {
   preferDirectDraw?: boolean
 
   scroll?: $<Point>
+  padding?: $<Point>
   @nu get dirty() {
     const { renders } = when(this)
     $()

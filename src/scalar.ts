@@ -5,21 +5,26 @@ export class Scalar {
   static create() { return $(new Scalar) }
   min = 0
   max = 1
-  fixed = 1
+  digits?= 1
   $value = 0
   get value() {
     return this.$value
   }
   set value(v) {
-    const { fixed, min, max } = this
-    this.$value = clamp(min, max, fixed
-      ? parseFloat(v.toFixed(fixed))
-      : v
-    )
+    const { digits, min, max } = this
+    this.$value = clamp(
+      min,
+      max,
+      digits != null
+        ? parseFloat(
+          v.toFixed(digits)
+        )
+        : v
+    ) || 0
   }
   get text() {
-    const { value, fixed } = this
-    return value.toFixed(fixed)
+    const { value, digits } = this
+    return value.toFixed(digits)
   }
   get scale() {
     const { min, max } = this
@@ -30,8 +35,12 @@ export class Scalar {
     return clamp(0, 1, (value - min) / scale)
   }
   set normal(v) {
-    const { scale, min } = this
-    this.value = v * scale + min
+    const { scale, min, max } = this
+    this.value = clamp(
+      min,
+      max,
+      clamp(0, 1, v) * scale + min
+    )
   }
 }
 

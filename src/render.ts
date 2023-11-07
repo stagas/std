@@ -54,42 +54,22 @@ export class Render
   *traverse(
     its: Renderable.It[],
     c?: CanvasRenderingContext2D,
-    // depth = 0,
   ): Generator<Renderable.It> {
     const { scroll } = this
+
     for (const it of its) {
       const { renderable: r } = it
-      if (r.dirty) r.dirty.index = this.index.value++
-      // r.dirty.depth = depth
       const rIts = r.its
 
       if (c && r.scroll) {
-        // r.before?.(c)
         scroll.add(r.scroll).round()
-        // colory('scroll', scroll.text)
-        if (rIts) yield* this.traverse(rIts, c) //, depth + 1)
+        if (rIts) yield* this.traverse(rIts, c)
         scroll.sub(r.scroll).round()
-
-        if (r.draw || r.render || r.init) {
-          yield it as any
-        }
-        else {
-          r.need = 0
-          r.isVisible = true
-        }
-        // r.after?.(c)
+        yield it
       }
       else {
-        // if (c) r.before?.(c)
-        if (rIts) yield* this.traverse(rIts, c) //, depth + 1)
-        if (r.draw || r.render || r.init) {
-          yield it as any
-        }
-        else {
-          r.need = 0
-          r.isVisible = true
-        }
-        // if (c) r.after?.(c)
+        if (rIts) yield* this.traverse(rIts, c)
+        yield it
       }
     }
   }
@@ -98,10 +78,17 @@ export class Render
   }
 }
 
+enum Debug {
+  None = 0,
+  Clear = 1 << 0,
+  Dirty = 1 << 1,
+  Visible = 1 << 2,
+  All = 127
+}
+
 class RenderAnimable extends Animable {
-  _tempRect = $(new Rect)
   need = Animable.Need.Init
-  debug = false
+  debug = Debug.None
   constructor(public it: Render) { super(it) }
   get active() {
     const { it } = this
@@ -143,46 +130,23 @@ class RenderAnimable extends Animable {
     // if (r.it.constructor.name === 'Text') {
     //   colory('Text', r.dirty.rect.text)
     // }
-
+    // r.dirty?.scroll.set(r.dirty.nextScroll)
     r.clear(c)
-    if (this.debug) r.dirty.stroke(c, '#' + randomHex())
-    r.need &= ~Renderable.Need.Clear
-  }
-  @fn rScheduleClear(d: Dirty) {
-    let r = d.owner
-    // if (r.didDraw && r.need & (Renderable.Need.Render | Renderable.Need.Draw)) {
-    // if (r.renders) {
-
-    r.need |= Renderable.Need.Clear
-    // }
-    // }
-  }
-  @fn rSchedulePaint(r: Renderable) {
-    if (this.rUpdateVisibleAndScroll(r)) {
-      r.need |= Renderable.Need.Paint
-    }
-  }
-  @fn rDirtyUpdate(r: Renderable, c: CanvasRenderingContext2D) {
-    r.dirty.rect.set(r.view)
-
-    // debug rect
-    if (this.debug) {
+    if (this.debug & Debug.Clear) {
       r.dirty.stroke(c, '#' + randomHex())
     }
-
-    this.it.current.push(r.dirty)
+    r.need &= ~Renderable.Need.Clear
   }
-  @fn rUpdateVisibleAndScroll(r: Renderable) {
-    const { it: { visible, scroll }, _tempRect } = this
+  @fn rUpdateVisibleAndScroll(r: Renderable, c: CanvasRenderingContext2D) {
+    const { it: { visible, scroll } } = this
 
-    _tempRect.set(r.view)
-      .translateNegative(scroll)
-
-    if (this.debug) _tempRect.stroke(this.it.world.canvas!.c, '#' + randomHex())
+    if (this.debug & Debug.Visible) {
+      r.view.stroke(c, '#' + randomHex())
+    }
 
     const isVisible =
       !r.isHidden
-      && _tempRect.intersectsRect(visible)
+      && r.view.intersectsRect(visible)
 
     if (!r.isVisible) {
       if (!isVisible) {
@@ -196,48 +160,54 @@ class RenderAnimable extends Animable {
     else {
       if (!isVisible) {
         r.isVisible = false
-        r.need = 0
+        r.need = Renderable.Need.Clear
         return false
       }
     }
 
-    if (r.dirty && !r.dirty.nextScroll.equals(scroll)) {
+    if (r.renders && r.dirty && !r.dirty.nextScroll.equals(scroll)) {
       r.dirty.nextScroll.set(scroll)
       r.need |= Renderable.Need.Paint | Renderable.Need.Clear
     }
+
     return true
+  }
+  @fn rScheduleClear(d: Dirty) {
+  }
+  @fn rSchedulePaint(r: Renderable, c: CanvasRenderingContext2D) {
+
+  }
+  @fn rDirtyUpdate(r: Renderable, c: CanvasRenderingContext2D) {
+    r.dirty.rect.set(r.view)
+
+    // debug rect
+    if (this.debug & Debug.Dirty) {
+      r.dirty.stroke(c, '#' + randomHex())
+    }
+
+    this.it.current.push(r.dirty)
   }
   last?: Renderable | null
   tempPoint = $(new Point)
   @fn rDirectDraw(r: Renderable, c: CanvasRenderingContext2D, t: number) {
     const { tempPoint } = this
-    // const { scroll } = it
-
-    // c.save()
-    // if (r.constructor !== this.last?.constructor) {
-    //   // c.restore()
-    //   // c.save()
-    // }
-
-    // if (!this.last || !r.dirty.scroll.equals(this.last.dirty.scroll)) {
-    //   // c.restore()
-    //   // c.save()
-    // }
 
     c.save()
     this.rInit(r, c)
-    tempPoint.set(r.dirty.scroll).add(r.view.pos)
-    if (r.padding) tempPoint.add(r.padding)
+    tempPoint
+      .set(r.dirty.scroll)
+      .add(r.view.pos)
+    if (r.padding) {
+      tempPoint.add(r.padding)
+    }
     tempPoint.translate(c)
     this.rRender(r, c, t, r.dirty.scroll)
     c.restore()
-    // c.save()
 
     this.last = r
-    // c.restore()
 
     r.need &= ~Renderable.Need.Draw
-    r.didDraw = true
+    // r.didDraw = true
   }
   @fn rPaint(r: Renderable, c: CanvasRenderingContext2D, t: number) {
     r.need &= ~Renderable.Need.Paint
@@ -259,11 +229,12 @@ class RenderAnimable extends Animable {
       if (r.need & Renderable.Need.Render) {
         r.rect.size.clear(r.canvas.c)
         this.rRender(r, r.canvas.c, t, r.dirty.scroll)
+        r.didDraw = true
       }
-      if (r.need & Renderable.Need.Draw) {
-        this.rDraw(r, c, t)
-        this.rDirtyUpdate(r, c)
-      }
+      // if (r.need & Renderable.Need.Draw) {
+      this.rDraw(r, c, t)
+      this.rDirtyUpdate(r, c)
+      // }
     }
   }
   @fn init() {
@@ -287,8 +258,6 @@ class RenderAnimable extends Animable {
       visible,
     } = it
 
-    current.count = 0
-
     this.last = null
 
     // c.save()
@@ -298,21 +267,31 @@ class RenderAnimable extends Animable {
 
     // schedule clearing
     for (const d of previous.values()) {
-      this.rScheduleClear(d)
+      // this.rScheduleClear(d)
+      // let r = d.owner
+      // if (r.didDraw && r.need & (Renderable.Need.Render | Renderable.Need.Draw)) {
+      // if (r.renders) {
+
+      // r.need |= Renderable.Need.Clear
+      // }
+      // }
+      this.rClear(d.owner, c)
     }
 
     // update visibility and scroll and schedule drawing
     for (const { renderable: r } of it.traverse(it.its, c)) {
-      this.rSchedulePaint(r)
+      if (this.rUpdateVisibleAndScroll(r, c)) {
+        r.need |= Renderable.Need.Paint
+      }
     }
 
     //-- do
 
-    for (const { renderable: r } of Renderable.traverse(it.its)) {
-      if (r.need & Renderable.Need.Clear) {
-        this.rClear(r, c)
-      }
-    }
+    // for (const { renderable: r } of Renderable.traverse(it.its)) {
+    //   if (r.need & Renderable.Need.Clear) {
+    //     this.rClear(r, c)
+    //   }
+    // }
 
     for (const { renderable: r } of Renderable.traverse(it.its)) {
       if (r.need & Renderable.Need.Paint) {
@@ -331,6 +310,7 @@ class RenderAnimable extends Animable {
 
     it.previous = current
     it.current = previous
+    it.current.count = 0
 
     if (!this.active) {
       this.need &= ~Animable.Need.Draw

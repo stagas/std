@@ -355,12 +355,32 @@ export class Rect extends Shape {
     c.strokeRect(x, y, w, h)
     return this
   }
+  strokeMargin(
+    c: CanvasRenderingContext2D,
+    margin = 0,
+    color: string = this.strokeColor) {
+    const { x, y, w, h } = this
+    const dm = margin * 2
+    c.strokeStyle = color
+    c.strokeRect(x + margin, y + margin, Math.max(0, w - dm), Math.max(0, h - dm))
+    return this
+  }
   fill(
     c: CanvasRenderingContext2D,
     color: string = this.fillColor) {
     const { x, y, w, h } = this
     c.fillStyle = color
     c.fillRect(x, y, w, h)
+    return this
+  }
+  fillMargin(
+    c: CanvasRenderingContext2D,
+    margin = 0,
+    color: string = this.fillColor) {
+    const { x, y, w, h } = this
+    c.fillStyle = color
+    const dm = margin * 2
+    c.fillRect(x + margin, y + margin, Math.max(0, w - dm), Math.max(0, h - dm))
     return this
   }
   drawImage(

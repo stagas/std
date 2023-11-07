@@ -50,8 +50,6 @@ export class Canvas {
     $.untrack(() => {
       assign(style, p.set(size).widthHeightPx)
     })
-
-    this.fill()
   }
 
   appendTo(el: HTMLElement) {

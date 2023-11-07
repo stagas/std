@@ -110,6 +110,7 @@ export class Colors {
   get brand4() { return this.theme[this.brand4ColorName] }
 
   // derived
+  get brand1Pale() { return S(this.brand1, -0.30) }
   get grey() { return L(S(this.theme.white, -1), -0.39) }
   get dark() { return L(S(this.theme.white, -1), -0.5) }
   get bgBright015() { return L(this.bg, 0.015) }

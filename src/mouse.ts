@@ -77,7 +77,12 @@ export class Mouse extends Scene {
     // First find the downIt and its scroll, if given,
     // and yield that before everything else.
     if (it === downIt) {
-      downIt.mouseable.mouse.pos.set(pos).sub(scroll)
+      if (m.hitAreaNormalize) {
+        m.mouse.pos.set(pos)
+      }
+      else {
+        m.mouse.pos.set(pos).sub(scroll)
+      }
       yield downIt
       yield* this.getItsUnderPointer(this.it)
       return
@@ -95,7 +100,11 @@ export class Mouse extends Scene {
     if (r.scroll) scroll.sub(r.scroll)
 
     let item: Mouseable.It | false | undefined
-    if (item = m.getItAtPoint(m.mouse.pos.set(pos).sub(scroll))) {
+    if (item = m.getItAtPoint(
+      m.hitAreaNormalize
+        ? m.mouse.pos.set(pos)
+        : m.mouse.pos.set(pos).sub(scroll)
+    )) {
       if (!downIt) yield item
     }
   }

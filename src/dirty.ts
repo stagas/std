@@ -1,5 +1,5 @@
 // log.active
-import { $ } from 'signal'
+import { $, fn } from 'signal'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
@@ -17,7 +17,7 @@ export class Dirty {
   scroll = $(new Point)
   nextScroll = $(new Point)
   redrawing = $(new FixedArray<Rect>)
-  overlapWith(other: Dirty) {
+  @fn overlapWith(other: Dirty) {
     testRect1 ??= $(new Rect)
     testRect2 ??= $(new Rect)
     return testRect1
@@ -28,7 +28,7 @@ export class Dirty {
           .translateByPos(other.scroll)
       )
   }
-  redrawOverlap(
+  @fn redrawOverlap(
     other: Dirty,
     c: CanvasRenderingContext2D,
     pr: number,
@@ -43,19 +43,19 @@ export class Dirty {
         scroll
       )
   }
-  clear(c: CanvasRenderingContext2D) {
+  @fn clear(c: CanvasRenderingContext2D) {
     testRect1 ??= $(new Rect)
     return testRect1.set(this.rect)
       .translateByPos(this.scroll)
       .clear(c)
   }
-  fill(c: CanvasRenderingContext2D, color: string) {
+  @fn fill(c: CanvasRenderingContext2D, color: string) {
     testRect1 ??= $(new Rect)
     return testRect1.set(this.rect)
       .translateByPos(this.scroll)
       .fill(c, color)
   }
-  stroke(c: CanvasRenderingContext2D, color: string) {
+  @fn stroke(c: CanvasRenderingContext2D, color: string) {
     testRect1 ??= $(new Rect)
     return testRect1.set(this.rect)
       .translateByPos(this.scroll)

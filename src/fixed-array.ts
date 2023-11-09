@@ -23,4 +23,9 @@ export class FixedArray<T> {
   push(item: T) {
     this.array[this.count++] = item
   }
+  add(item: T) {
+    if (!this.includes(this.count, item)) {
+      this.push(item)
+    }
+  }
 }

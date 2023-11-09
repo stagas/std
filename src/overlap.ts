@@ -13,7 +13,6 @@ export class Overlap {
     const { d1, d2 } = of(this)
     const overlap = d1.overlapWith(d2)
     if (overlap) {
-      // console.log('OVERLAP', d1.owner.it, d1.index, d2.owner.it, d2.index)
       this.rect.set(overlap)
       return this.rect
     }

@@ -373,6 +373,15 @@ export class Rect extends Shape {
     c.fillRect(x, y, w, h)
     return this
   }
+  fillTranslated(
+    c: CanvasRenderingContext2D,
+    offset: Point,
+    color: string = this.fillColor) {
+    const { x, y, w, h } = this
+    c.fillStyle = color
+    c.fillRect(x + offset.x, y + offset.y, w, h)
+    return this
+  }
   fillMargin(
     c: CanvasRenderingContext2D,
     margin = 0,
@@ -405,7 +414,7 @@ export class Rect extends Shape {
     return this
   }
   drawImageTranslated(
-    canvas: HTMLCanvasElement,
+    canvas: HTMLCanvasElement | HTMLImageElement,
     c: CanvasRenderingContext2D,
     pr = 1,
     normalize = false,

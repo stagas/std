@@ -63,6 +63,7 @@ export class Anim {
   }
   @fx listen_its() {
     if (!this.isAnimating && this.active) {
+      $()
       this.start()
       return
     }
@@ -71,6 +72,9 @@ export class Anim {
     this.updated
     let pass = 0
     for (const it of this.its) {
+      // if (it.animable.need) {
+      //   console.log(it.constructor.name)
+      // }
       pass |= it.animable.need
     }
     return pass

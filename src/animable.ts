@@ -3,6 +3,7 @@
 export abstract class Animable {
   constructor(public it: Animable.It) { }
   need = Animable.Need.Idle
+  didDraw?: boolean
   public init?(): void
   public tick?(dt: number): void
   public tickOne?(dt: number): void { }

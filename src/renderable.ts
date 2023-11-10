@@ -53,7 +53,11 @@ export abstract class Renderable {
   _view = $(new Rect)
   get view() {
     $()
-    return this.renders ? this._view.set(this.rect) : this._view
+    return this.renders
+      ? this._view.hasSize
+        ? this._view
+        : this._view.set(this.rect) as $<Rect>
+      : this._view
   }
 
   need = Renderable.Need.Idle
@@ -83,7 +87,7 @@ export abstract class Renderable {
 
   get shouldClear() {
     return this.renders && (this.didDraw && (
-      this.needDraw
+      this.shouldPaint
       || !this.isVisible
       || this.isHidden
     ))
@@ -94,7 +98,7 @@ export abstract class Renderable {
   }
 
   get shouldPaint() {
-    return this.renders && this.isVisible && (!this.didDraw || this.needDraw)
+    return this.renders && this.isVisible && (this.opPaint || !this.didDraw || this.needDraw || this.needRender)
   }
 
   clearBefore(c: CanvasRenderingContext2D) {
@@ -128,11 +132,12 @@ export abstract class Renderable {
   }
 
   render() {
-    const { canvas, offset } = this
+    const { rect, canvas, offset } = this
 
     tempPoint.zero()
     if (offset) tempPoint.add(offset)
 
+    rect.clear(canvas.c)
     this.draw!(canvas.c, tempPoint)
 
     this.didRender = true
@@ -140,7 +145,7 @@ export abstract class Renderable {
   }
 
   paint(c: CanvasRenderingContext2D) {
-    const { dirtyNext } = this
+    const { dirtyNext, dirtyBefore } = this
 
     this.dirtyNext = this.dirtyBefore
     this.dirtyBefore = dirtyNext
@@ -155,7 +160,7 @@ export abstract class Renderable {
       if (this.canDirectDraw) {
         c.save()
         this.init?.(c)
-        this.draw!(c, dirtyNext.view.pos)
+        this.draw!(c, tempPoint.set(dirtyNext.view.pos))
         c.restore()
         return
       }
@@ -165,21 +170,21 @@ export abstract class Renderable {
       this.render()
     }
 
-    this.view.drawImageTranslated(
+    dirtyNext.rect.drawImageTranslated(
       this.canvas.el,
       c,
       this.pr,
       true,
-      this.dirtyNext.scroll,
+      dirtyNext.scroll,
     )
   }
-  @fx trigger_init_on_first() {
+  @fx trigger_init_on_first__() {
     const { didRender } = whenNot(this)
     const { isVisible } = when(this)
     $()
     this.needInit = true
   }
-  @fx update_rect() {
+  @fx update_rect_on_resize_view__() {
     const { renders } = when(this)
     const { w, h } = this.view
     $()
@@ -187,7 +192,7 @@ export abstract class Renderable {
     this.rect.h = Math.max(this.rect.h, h)
     if (this.didRender) this.needRender = true
   }
-  @fx trigger_init_and_draw_on_resize() {
+  @fx trigger_init_and_draw_on_resize__() {
     const { renders, pr } = when(this)
     const { w, h } = this.rect
     $()
@@ -195,7 +200,7 @@ export abstract class Renderable {
     if (this.didRender) this.needRender = true
     if (this.didDraw) this.needDraw = true
   }
-  @fx trigger_draw_on_move() {
+  @fx trigger_draw_on_move__() {
     const { renders } = when(this)
     const { x, y } = this.view
     $()

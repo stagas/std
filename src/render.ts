@@ -1,6 +1,6 @@
-log.active
+// log.active
 import { $, fn, fx, of } from 'signal'
-import { colory, maybePush, maybeSplice } from 'utils'
+import { colory, maybePush, maybeSplice, randomHex } from 'utils'
 import { Animable } from './animable.ts'
 import { Dirty } from './dirty.ts'
 import { FixedArray } from './fixed-array.ts'
@@ -28,15 +28,15 @@ export class Render
 
   view = $(new Rect)
   scroll = $(new Point)
-  previous = $(new FixedArray<Renderable.It>)
-  current = $(new FixedArray<Renderable.It>)
+  previous = $(new FixedArray<Renderable>)
+  current = $(new FixedArray<Renderable>)
   visited = new Set<Renderable>()
   clearing = new Set<Renderable>()
   clearingRects = $(new FixedArray<Rect>)
   painting = new Set<Renderable>()
 
   its: Renderable.It[] = []
-  updated = 0
+  // updated = 0
   // index = { value: 0 }
 
   get visible() {
@@ -45,13 +45,13 @@ export class Render
   @fn add(it: Renderable.It) {
     maybePush(this.its, it)
     // this.its = [...this.its]
-    this.updated++
+    // this.updated++
     return this
   }
   @fn remove(it: Renderable.It) {
     maybeSplice(this.its, it)
     // this.its = [...this.its]
-    this.updated++
+    // this.updated++
     return this
   }
   *traverse(
@@ -82,39 +82,23 @@ export class Render
 }
 
 class RenderAnimable extends Animable {
-  need = Animable.Need.Init
-
+  need = Animable.Need.Init | Animable.Need.Draw
   constructor(public it: Render) { super(it) }
-
+  tempRect = $(new Rect)
   get debug() {
     return this.it.debug
   }
-  get its() {
-    const { it } = this
-    it.updated
-    return [...Renderable.traverse(it.its)]
-  }
-  get active() {
-    const { it, its } = this
-    let pass = 0
-    it.updated
-    for (const { renderable: r } of its) {
-      if (r.shouldPaint) {
-        pass |= Animable.Need.Draw
+  @fx trigger_anim_draw() {
+    let pass = false
+    for (const { renderable: r } of Renderable.traverse(this.it.its)) {
+      if (r.need) {
+        // console.log(r.need, r.it.constructor.name)
+        pass = true
       }
     }
-    return pass
-  }
-  @fx trigger_anim_draw_on_its() {
-    this.its
     $()
-    this.need |= Animable.Need.Draw
-  }
-  @fx trigger_anim_draw() {
-    if (this.active || !this.didDraw) {
-      $()
+    if (pass) {
       this.need |= Animable.Need.Draw
-      return
     }
   }
   @fn init() {
@@ -130,7 +114,7 @@ class RenderAnimable extends Animable {
     this.need &= ~Animable.Need.Init
   }
   @fn draw(t = 1) {
-    const { it, its } = this
+    const { it, tempRect } = this
     const {
       scroll,
       visible,
@@ -147,6 +131,8 @@ class RenderAnimable extends Animable {
       skin: { colors: { bg } }
     } = of(it.world)
 
+    const its = [...Renderable.traverse(it.its)]
+
     log('draw', its.length)
 
     if (!its.length) {
@@ -156,10 +142,18 @@ class RenderAnimable extends Animable {
     for (const { renderable: r } of its) {
       if (r.shouldInit) {
         r.init!(r.canvas.c)
+        r.needInit = false
+        r.didInit = true
+        if (r.renders) r.needDraw = true
+      }
+      else if (r.needInit && !r.init) {
+        r.needInit = false
         r.didInit = true
         if (r.renders) r.needDraw = true
       }
     }
+
+    scroll.zero()
 
     // determine new visibility
     for (const { renderable: r } of it.traverse(it.its, c)) {
@@ -168,44 +162,79 @@ class RenderAnimable extends Animable {
       // log('view', r.it.constructor.name, r.view.text)
       // log('visible', visible.text)
 
-      r.isVisible = true
-      // !r.isHidden
-      //   && r.view.intersectsRect(visible)
+      r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
 
-      if (r.isVisible && !r.dirtyNext.scroll.equals(scroll)) {
+      if (r.isVisible && !r.dirtyBefore.scroll.equals(scroll)) {
         r.opPaint = true
-        r.dirtyNext.scroll.set(scroll)
+      }
+      r.dirtyNext.scroll.set(scroll)
+
+      if (r.canDirectDraw && it.needDirect) {
+        r.opDirect = true
       }
 
       if (r.shouldPaint) painting.add(r)
     }
 
-    for (const { renderable: r } of previous.values()) {
+    for (const r of previous.values()) {
       if (!visited.has(r)) {
         r.isVisible = false
       }
 
-      if (r.shouldClear) clearing.add(r)
+      if (r.shouldClear) {
+        clearing.add(r)
+      }
     }
 
     for (const r of clearing) {
+      // if (r.it.constructor.name === 'PlotWidget') {
+      //   console.log('HEHEY', r.dirtyBefore.view.text)
+      // }
       clearingRects.add(r.dirtyBefore.view)
+      // r.dirtyBefore.view.clear(c)
     }
 
     for (const r of painting) {
-      clearingRects.add(r.dirtyNext.update())
+      if (r.didDraw && !clearing.has(r)) {
+        clearingRects.add(r.dirtyBefore.view)
+      }
+      r.dirtyNext.update()
+      clearingRects.add(r.dirtyNext.view)
     }
 
-    for (const rect of mergeRects(
-      clearingRects.array,
-      clearingRects.count
-    ).values()) {
-      rect.clear(c)
-    }
+    // for (const rect of clearingRects.values()) {
+    //   rect.clear(c)
+    // }
+    tempRect.combineRects(clearingRects.array, clearingRects.count)
+      .clear(c)
+      // .stroke(c, '#' + randomHex())
 
-    for (const r of painting) {
-      log('paint', r.it.constructor.name)
-      r.paint(c)
+    // for (const rect of mergeRects(
+    //   clearingRects.array,
+    //   clearingRects.count
+    // ).values()) {
+    //   rect.clear(c)//.stroke(c, '#' + randomHex())
+    // }
+
+    for (const { renderable: r } of its) {
+      if (painting.has(r)) {
+        r.paint(c)
+        current.push(r)
+        // current.push(r)
+      }
+      else {
+        if (r.renders && r.isVisible) {
+          const ir = tempRect.intersectionRect(r.dirtyBefore.view)
+          if (ir) {
+            if (!r.didRender) {
+              r.render()
+              // console.log('DO RENDER', r)
+            }
+            r.dirtyBefore.redrawIntersectionRect(ir, c, pr)
+              // .stroke(c, '#' + randomHex())
+          }
+        }
+      }
     }
 
     // -- prepare for next
@@ -226,8 +255,12 @@ class RenderAnimable extends Animable {
 
     if (its.length) this.didDraw = true
 
-    if (its.length && !this.active) {
+    if (its.length && its.every(it => !it.renderable.isVisible || !it.renderable.needDraw)) {
       this.need &= ~Animable.Need.Draw
+    }
+    else {
+      const itt = its.find(it => it.renderable.needDraw)
+      if (itt) console.log(itt.renderable.need, itt.constructor.name)
     }
   }
 }

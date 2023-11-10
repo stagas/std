@@ -16,10 +16,10 @@ export class Dirty {
     $()
     return this._view
       .set(this.rect)
-      .translateByPos(this.scroll) as $<Rect>
+      .translateByPos(this.scroll).floorCeil() as $<Rect>
   }
   @fn update() {
-    return this.rect.set(this.owner.view) as $<Rect>
+    return this.rect.set(this.owner.view).floorCeil() as $<Rect>
   }
   @fn redrawIntersectionRect(
     ir: Rect, c: CanvasRenderingContext2D, pr: number) {

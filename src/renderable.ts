@@ -204,7 +204,11 @@ export abstract class Renderable {
     const { renders } = when(this)
     const { x, y } = this.view
     $()
-    if (this.didDraw) this.needDraw = true
+    if (this.didDraw) {
+      this.needDraw = true
+      // console.log(this.it.constructor.name)
+      return
+    }
   }
 }
 

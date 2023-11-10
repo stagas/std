@@ -1,6 +1,6 @@
 // log.active
 import { $, fn, fx, of } from 'signal'
-import { colory, maybePush, maybeSplice, randomHex } from 'utils'
+import { colory, maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
 import { Animable } from './animable.ts'
 import { Dirty } from './dirty.ts'
 import { FixedArray } from './fixed-array.ts'
@@ -28,12 +28,14 @@ export class Render
 
   view = $(new Rect)
   scroll = $(new Point)
-  previous = $(new FixedArray<Renderable>)
-  current = $(new FixedArray<Renderable>)
+  // previous = $(new FixedArray<Renderable>)
+  // current = $(new FixedArray<Renderable>)
   visited = new Set<Renderable>()
   clearing = new Set<Renderable>()
   clearingRects = $(new FixedArray<Rect>)
+  overlaps = $(new FixedArray<Rect>)
   painting = new Set<Renderable>()
+  painted = new Set<Renderable>()
 
   its: Renderable.It[] = []
   // updated = 0
@@ -118,12 +120,15 @@ class RenderAnimable extends Animable {
     const {
       scroll,
       visible,
-      previous,
-      current,
+      // previous,
+      // current,
       visited,
       clearing,
       clearingRects,
       painting,
+      painted,
+      overlaps,
+      needDirect,
     } = it
     const {
       canvas: { c, rect },
@@ -162,9 +167,14 @@ class RenderAnimable extends Animable {
       // log('view', r.it.constructor.name, r.view.text)
       // log('visible', visible.text)
 
-      r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
+      // const wasVisible = r.isVisible
+      r.isVisible = true //!r.renders || (!r.isHidden && r.view.intersectsRect(visible))
 
-      if (r.isVisible && !r.dirtyBefore.scroll.equals(scroll)) {
+      // if (!wasVisible && r.isVisible) {
+      //   r.needInit = r.needRender = r.needDraw = true
+      // }
+
+      if (r.renders && r.isVisible && !r.dirtyBefore.scroll.equals(scroll)) {
         r.opPaint = true
       }
       r.dirtyNext.scroll.set(scroll)
@@ -173,10 +183,13 @@ class RenderAnimable extends Animable {
         r.opDirect = true
       }
 
-      if (r.shouldPaint) painting.add(r)
+      if (r.shouldPaint) {
+        painting.add(r)
+        // console.log(r.it.constructor.name, r.need)
+      }
     }
 
-    for (const r of previous.values()) {
+    for (const r of painted) {
       if (!visited.has(r)) {
         r.isVisible = false
       }
@@ -187,6 +200,8 @@ class RenderAnimable extends Animable {
     }
 
     for (const r of clearing) {
+      // console.log('CLEAR', r.it.constructor.name)
+      painted.delete(r)
       // if (r.it.constructor.name === 'PlotWidget') {
       //   console.log('HEHEY', r.dirtyBefore.view.text)
       // }
@@ -195,6 +210,8 @@ class RenderAnimable extends Animable {
     }
 
     for (const r of painting) {
+      painted.add(r)
+
       if (r.didDraw && !clearing.has(r)) {
         clearingRects.add(r.dirtyBefore.view)
       }
@@ -202,12 +219,21 @@ class RenderAnimable extends Animable {
       clearingRects.add(r.dirtyNext.view)
     }
 
-    // for (const rect of clearingRects.values()) {
-    //   rect.clear(c)
-    // }
-    tempRect.combineRects(clearingRects.array, clearingRects.count)
-      .clear(c)
-      // .stroke(c, '#' + randomHex())
+    if (needDirect) {
+      tempRect.combineRects(clearingRects.array, clearingRects.count)
+        .clear(c)
+
+    }
+    else {
+      for (const rect of clearingRects.values()) {
+        rect.floorCeil().clear(c)
+        // .stroke(c, '#' + randomHex())
+      }
+    }
+    // tempRect.combineRects(clearingRects.array, clearingRects.count)
+    //   .clear(c)
+
+    // .stroke(c, '#' + randomHex())
 
     // for (const rect of mergeRects(
     //   clearingRects.array,
@@ -219,19 +245,34 @@ class RenderAnimable extends Animable {
     for (const { renderable: r } of its) {
       if (painting.has(r)) {
         r.paint(c)
-        current.push(r)
-        // current.push(r)
+        painted.add(r)
+        // r.dirtyNext.view.stroke(c, '#' + randomHex())
       }
       else {
         if (r.renders && r.isVisible) {
-          const ir = tempRect.intersectionRect(r.dirtyBefore.view)
-          if (ir) {
-            if (!r.didRender) {
-              r.render()
-              // console.log('DO RENDER', r)
+          if (needDirect) {
+            const ir = tempRect.intersectionRect(r.dirtyBefore.view)
+            if (ir) {
+              if (!r.didRender) r.render()
+              r.dirtyBefore.redrawIntersectionRect(tempRect, c, pr)
             }
-            r.dirtyBefore.redrawIntersectionRect(ir, c, pr)
+          }
+          else {
+            overlaps.count = 0
+            for (const rect of clearingRects.values()) {
+              // TODO: use only below intersection rect
+              const ir = rect.intersectionRect(r.dirtyBefore.view)
+              if (ir) {
+                if (!r.didRender) r.render()
+                poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
+                  .set(ir.floorCeil())
+              }
+            }
+
+            if (overlaps.count) for (const rect of mergeRects(overlaps.array, overlaps.count).values()) {
+              r.dirtyBefore.redrawIntersectionRect(rect, c, pr)
               // .stroke(c, '#' + randomHex())
+            }
           }
         }
       }
@@ -239,9 +280,9 @@ class RenderAnimable extends Animable {
 
     // -- prepare for next
 
-    it.previous = current
-    it.current = previous
-    it.current.count = 0
+    // it.previous = current
+    // it.current = previous
+    // it.current.count = 0
 
     visited.clear()
     clearing.clear()
@@ -252,7 +293,9 @@ class RenderAnimable extends Animable {
     // cleared.clear()
     // overlaps.count = 0
     // redraws.count = 0
+    // it.needDirect = false
 
+    // console.log('need direct', it.needDirect)
     if (its.length) this.didDraw = true
 
     if (its.length && its.every(it => !it.renderable.isVisible || !it.renderable.needDraw)) {

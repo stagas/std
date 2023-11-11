@@ -33,7 +33,7 @@ export abstract class Renderable {
   offset?: $<Point>
   get its(): Renderable.It[] | undefined { return }
   get flatIts() {
-    return [...(this.its ?? []), ...Renderable.traverse(this.its ?? [])]
+    return [...Renderable.traverse(this.its ?? [])]
   }
   public init?(c: CanvasRenderingContext2D): void
   public draw?(c: CanvasRenderingContext2D, point: Point): void

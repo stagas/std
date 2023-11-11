@@ -53,11 +53,11 @@ export class Keyboard {
     $()
     this.textareaRect.center.set(pos)
   }
-  @fx move_textarea() {
-    const { style } = of(this)
-    style.transform =
-      this.textareaRect.pos.styleTransformTranslate
-  }
+  // @fx move_textarea() {
+  //   const { style } = of(this)
+  //   style.transform =
+  //     this.textareaRect.pos.styleTransformTranslate
+  // }
   @fx update_focusIt() {
     const { style, world } = of(this)
     const { mouse } = of(world)

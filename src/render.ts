@@ -87,6 +87,10 @@ class RenderAnimable extends Animable {
   need = Animable.Need.Init | Animable.Need.Draw
   constructor(public it: Render) { super(it) }
   tempRect = $(new Rect)
+  get its() {
+    const { its } = this.it
+    return [...its.flatMap(it => it.renderable.flatIts)]
+  }
   get debug() {
     return this.it.debug
   }
@@ -116,7 +120,7 @@ class RenderAnimable extends Animable {
     this.need &= ~Animable.Need.Init
   }
   @fn draw(t = 1) {
-    const { it, tempRect } = this
+    const { it, tempRect, its } = this
     const {
       scroll,
       visible,
@@ -136,7 +140,7 @@ class RenderAnimable extends Animable {
       skin: { colors: { bg } }
     } = of(it.world)
 
-    const its = [...Renderable.traverse(it.its)]
+    // const its = [...Renderable.traverse(it.its)]
 
     log('draw', its.length)
 

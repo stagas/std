@@ -12,7 +12,7 @@ export class Dirty {
   scroll = $(new Point)
   _view = $(new Rect)
   get view() {
-    const { rect: { x, y }, scroll: { x: sx, y: sy } } = this
+    const { rect: { x, y, w, h }, scroll: { x: sx, y: sy } } = this
     $()
     return this._view
       .set(this.rect)

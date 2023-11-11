@@ -63,8 +63,8 @@ export class Canvas {
     return this
   }
 
-  fill() {
-    this.rect.size.fill(this.c)
+  fill(color?: string) {
+    this.rect.size.fill(this.c, color)
   }
 }
 

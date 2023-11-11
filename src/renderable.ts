@@ -132,13 +132,10 @@ export abstract class Renderable {
   }
 
   render() {
-    const { rect, canvas, offset } = this
-
-    tempPoint.zero()
-    if (offset) tempPoint.add(offset)
+    const { rect, canvas } = this
 
     rect.clear(canvas.c)
-    this.draw!(canvas.c, tempPoint)
+    this.draw!(canvas.c, tempPoint.zero())
 
     this.didRender = true
     this.needRender = false
@@ -159,6 +156,7 @@ export abstract class Renderable {
 
       if (this.canDirectDraw) {
         c.save()
+        this.didRender = false
         this.init?.(c)
         this.draw!(c, tempPoint.set(dirtyNext.view.pos))
         c.restore()

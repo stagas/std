@@ -27,6 +27,7 @@ export class Render
   wasDirect = false
 
   view = $(new Rect)
+  visible = $(new Rect)
   scroll = $(new Point)
   // previous = $(new FixedArray<Renderable>)
   // current = $(new FixedArray<Renderable>)
@@ -41,9 +42,6 @@ export class Render
   // updated = 0
   // index = { value: 0 }
 
-  get visible() {
-    return $(new Rect(this.view.size, this.scroll.inverted))
-  }
   @fn add(it: Renderable.It) {
     maybePush(this.its, it)
     // this.its = [...this.its]
@@ -124,6 +122,7 @@ class RenderAnimable extends Animable {
     const {
       scroll,
       visible,
+      view,
       // previous,
       // current,
       visited,
@@ -165,11 +164,15 @@ class RenderAnimable extends Animable {
     scroll.zero()
 
     // determine new visibility
+    visible.size.set(view.size)
     for (const { renderable: r } of it.traverse(it.its, c)) {
+      visible.pos.set(scroll.inverted)
+
       visited.add(r)
 
       // log('view', r.it.constructor.name, r.view.text)
-      // log('visible', visible.text)
+      // visible.pos.set(scroll.inverted)
+      // console.log('visible', visible.text, 'scroll', scroll.text)
 
       // const wasVisible = r.isVisible
       r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))

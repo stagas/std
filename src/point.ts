@@ -81,10 +81,11 @@ export class Point extends Shape {
   height = alias(this, 'y')
 
   get $inverted() {
+    $()
     return $(new Point)
   }
   get inverted() {
-    const { x, y } = this
+    const {x, y} = this
     $()
     return this.$inverted.setParameters(-x, -y) as $<Point>
   }

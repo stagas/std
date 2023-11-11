@@ -360,9 +360,14 @@ export class Rect extends Shape {
     margin = 0,
     color: string = this.strokeColor) {
     const { x, y, w, h } = this
-    const dm = margin * 2
     c.strokeStyle = color
-    c.strokeRect(x + margin, y + margin, Math.max(0, w - dm), Math.max(0, h - dm))
+    const m2 = margin * 2
+    c.strokeRect(
+      x + margin,
+      y + margin,
+      Math.max(0, w * (w / (w + m2))),
+      Math.max(0, h * (h / (h + m2)))
+    )
     return this
   }
   fill(
@@ -388,8 +393,13 @@ export class Rect extends Shape {
     color: string = this.fillColor) {
     const { x, y, w, h } = this
     c.fillStyle = color
-    const dm = margin * 2
-    c.fillRect(x + margin, y + margin, Math.max(0, w - dm), Math.max(0, h - dm))
+    const m2 = margin * 2
+    c.fillRect(
+      x + margin,
+      y + margin,
+      Math.max(0, w * (w / (w + m2))),
+      Math.max(0, h * (h / (h + m2)))
+    )
     return this
   }
   drawImage(

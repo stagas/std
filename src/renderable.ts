@@ -206,10 +206,18 @@ export abstract class Renderable {
     $()
     if (this.didDraw) {
       this.needDraw = true
-      // console.log(this.it.constructor.name)
       return
     }
   }
+  // @fx trigger_draw_on_isHidden__() {
+  //   const { renders } = when(this)
+  //   const { isHidden } = this
+  //   $()
+  //   if (this.didDraw) {
+  //     this.needDraw = true
+  //     return
+  //   }
+  // }
 }
 
 export namespace Renderable {

@@ -172,7 +172,7 @@ class RenderAnimable extends Animable {
       // log('visible', visible.text)
 
       // const wasVisible = r.isVisible
-      r.isVisible = true //!r.renders || (!r.isHidden && r.view.intersectsRect(visible))
+      r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
 
       // if (!wasVisible && r.isVisible) {
       //   r.needInit = r.needRender = r.needDraw = true

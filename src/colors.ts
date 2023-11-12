@@ -91,7 +91,7 @@ export class Colors {
   get brand1() { return this.theme[this.brand1ColorName] }
   get brand1Bright015() {
     return L(this.theme[this.brand1ColorName],
-      0.015)
+      -0.9)
   }
   get brand1Bright025() {
     return L(this.theme[this.brand1ColorName],

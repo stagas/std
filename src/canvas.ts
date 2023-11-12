@@ -15,6 +15,8 @@ export class Canvas {
 
   fullWindow?: boolean
   alpha = true
+  fillAfterResize?: string
+  imageSmoothingEnabled?: boolean
 
   style?: CSSStyleDeclaration
 
@@ -44,6 +46,12 @@ export class Canvas {
     $.untrack(() => {
       assign(el, p.set(size).mul(pr).widthHeight)
       c.scale(pr, pr)
+      if (this.imageSmoothingEnabled != null) {
+        c.imageSmoothingEnabled = this.imageSmoothingEnabled
+      }
+      if (this.fillAfterResize) {
+        this.fill(this.fillAfterResize)
+      }
     })
 
     const { style } = of(this)

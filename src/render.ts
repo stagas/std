@@ -23,7 +23,7 @@ export class Render
   implements Animable.It {
   constructor(public world: World) { }
 
-  debug = Debug.None //Clear //Overlap
+  debug = Debug.None //Overlap
 
   needDirect = false
   preferDirect = false
@@ -40,6 +40,7 @@ export class Render
   overlaps = $(new FixedArray<Rect>)
   painting = new Set<Renderable>()
   painted = new Set<Renderable>()
+  drawOver = new Set<Renderable>()
 
   its: Renderable.It[] = []
   // updated = 0
@@ -88,7 +89,7 @@ class RenderAnimable extends Animable {
   need = Animable.Need.Init | Animable.Need.Draw
   constructor(public it: Render) { super(it) }
   tempRect = $(new Rect)
-  get its() {
+  get renderableIts() {
     const { its } = this.it
     return [...its.flatMap(it => it.renderable.flatIts)]
   }
@@ -97,7 +98,7 @@ class RenderAnimable extends Animable {
   }
   @fx trigger_anim_draw() {
     let pass = false
-    for (const { renderable: r } of Renderable.traverse(this.it.its)) {
+    for (const { renderable: r } of this.renderableIts) {
       if (r.need) {
         // console.log(r.need, r.it.constructor.name)
         pass = true
@@ -120,8 +121,14 @@ class RenderAnimable extends Animable {
     rect.fill(c)
     this.need &= ~Animable.Need.Init
   }
-  @fn draw(t = 1) {
-    const { it, tempRect, its, debug } = this
+  @fn tickOne(dt = 1) {
+    const { renderableIts: its } = this
+    for (const it of its) {
+      it.renderable.dt = dt
+    }
+  }
+  draw(t = 1) {
+    const { it, tempRect, renderableIts: its, debug } = this
     const {
       scroll,
       visible,
@@ -136,6 +143,7 @@ class RenderAnimable extends Animable {
       overlaps,
       needDirect,
       preferDirect,
+      drawOver,
     } = it
     const {
       canvas: { c, rect },
@@ -151,7 +159,9 @@ class RenderAnimable extends Animable {
       return
     }
 
+    let index = 0
     for (const { renderable: r } of its) {
+      r.index = index++
       if (r.shouldInit) {
         r.init!(r.canvas.c)
         r.needInit = false
@@ -169,8 +179,10 @@ class RenderAnimable extends Animable {
 
     // determine new visibility
     visible.size.set(view.size)
+
     for (const { renderable: r } of it.traverse(it.its, c)) {
       visible.pos.set(scroll.inverted)
+      // visible.fill(c, '#f00')
 
       visited.add(r)
 
@@ -213,7 +225,9 @@ class RenderAnimable extends Animable {
 
     for (const r of clearing) {
       painted.delete(r)
-      clearingRects.add(r.dirtyBefore.view)
+      if (!r.fillClear) clearingRects.add(r.dirtyBefore.view)
+      // if (!r.fillClear)
+      // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       // console.log(r.dirtyBefore.view.text, r.it.constructor.name)
     }
 
@@ -221,10 +235,17 @@ class RenderAnimable extends Animable {
       painted.add(r)
 
       if (r.didDraw && !clearing.has(r)) {
-        clearingRects.add(r.dirtyBefore.view)
+        if (!r.fillClear) clearingRects.add(r.dirtyBefore.view)
+        // if (!r.fillClear)
+        // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       }
+
       r.dirtyNext.update()
-      clearingRects.add(r.dirtyNext.view)
+
+      if (!r.fillClear) clearingRects.add(r.dirtyNext.view)
+      else drawOver.add(r)
+      // if (!r.fillClear)
+      // else r.dirtyNext.view.drawImage(r.dirtyNext.canvas.el, c, pr, true)
     }
 
     // -----
@@ -268,6 +289,13 @@ class RenderAnimable extends Animable {
       // console.log('cleared', ii)
     }
 
+    // for (const r of clearing) {
+    //   if (r.fillClear) {
+    //     // r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
+    //     // r.dirtyNext.view.fill(c, r.fillClear)
+    //   }
+    // }
+
     for (const { renderable: r } of its) {
       if (painting.has(r)) {
         r.paint(c)
@@ -286,7 +314,17 @@ class RenderAnimable extends Animable {
           else {
             overlaps.count = 0
             for (const rect of clearingRects.values()) {
+              // if (r.fillClear) continue
               // TODO: use only below intersection rect
+              const ir = rect.intersectionRect(r.dirtyBefore.view)
+              if (ir) {
+                poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
+                  .set(ir.floorCeil())
+              }
+            }
+            for (const other of drawOver.values()) {
+              if (other.index > r.index) continue
+              const rect = other.dirtyNext.view
               const ir = rect.intersectionRect(r.dirtyBefore.view)
               if (ir) {
                 poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
@@ -318,6 +356,7 @@ class RenderAnimable extends Animable {
     visited.clear()
     clearing.clear()
     painting.clear()
+    drawOver.clear()
 
     clearingRects.count = 0
 

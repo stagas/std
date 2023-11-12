@@ -1,6 +1,18 @@
 // log.active
 
 export abstract class Animable {
+  static *traverse(its: Animable.It[]): Generator<Animable.It> {
+    for (const it of its) {
+      const { animable: a } = it
+      if (a.its) yield* Animable.traverse(a.its)
+      yield it as any
+    }
+  }
+  get its(): Animable.It[] | undefined { return }
+  get flatIts() {
+    return [...Animable.traverse(this.its ?? [])]
+  }
+
   constructor(public it: Animable.It) { }
   need = Animable.Need.Idle
   didDraw?: boolean

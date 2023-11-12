@@ -22,19 +22,21 @@ export abstract class Renderable {
 
   static *traverse(its: Renderable.It[]): Generator<Renderable.It> {
     for (const it of its) {
-      const { renderable: r } = it
+      const r = it.renderable
       if (r.its) yield* Renderable.traverse(r.its)
       yield it as any
     }
   }
-
-  canDirectDraw?: boolean
-  scroll?: $<Point>
-  offset?: $<Point>
   get its(): Renderable.It[] | undefined { return }
   get flatIts() {
     return [...Renderable.traverse(this.its ?? [])]
   }
+
+  canDirectDraw?: boolean
+  fillClear?: string
+  clearBeforeRender = true
+  scroll?: $<Point>
+  offset?: $<Point>
   public init?(c: CanvasRenderingContext2D): void
   public draw?(c: CanvasRenderingContext2D, point: Point): void
 
@@ -49,6 +51,10 @@ export abstract class Renderable {
     public pr = it.ctx.world.screen.$.pr,
     public prRecip = it.ctx.world.screen.$.prRecip,
   ) { }
+
+  dt = 1
+
+  index = -1
 
   _view = $(new Rect)
   get view() {
@@ -132,50 +138,59 @@ export abstract class Renderable {
   }
 
   render() {
-    const { rect, canvas } = this
+    // if (this.draw) {
+    const { rect, canvas, clearBeforeRender } = this
 
+    // if (clearBeforeRender) {
     rect.clear(canvas.c)
+    // }
     this.draw!(canvas.c, tempPoint.zero())
-
+    // }
     this.didRender = true
     this.needRender = false
   }
 
   paint(c: CanvasRenderingContext2D) {
-    const { dirtyNext, dirtyBefore } = this
+    const { dirtyNext } = this
+    try {
+      this.didDraw = true
+      this.needDraw = false
+      this.opPaint = false
 
-    this.dirtyNext = this.dirtyBefore
-    this.dirtyBefore = dirtyNext
-
-    this.didDraw = true
-    this.needDraw = false
-    this.opPaint = false
-
-    if (this.opDirect) {
-      this.opDirect = false
-
-      if (this.canDirectDraw) {
-        c.save()
-        this.didRender = false
-        this.init?.(c)
-        this.draw!(c, tempPoint.set(dirtyNext.view.pos))
-        c.restore()
-        return
+      if (this.opDirect) {
+        this.opDirect = false
+        if (this.canDirectDraw) {
+          c.save()
+          this.didRender = false
+          this.init?.(c)
+          this.draw!(c, tempPoint.set(dirtyNext.view.pos))
+          c.restore()
+          return
+        }
       }
-    }
 
-    if (this.shouldRender) {
-      this.render()
-    }
+      if (this.shouldRender) {
+        this.render()
+      }
 
-    dirtyNext.rect.drawImageTranslated(
+      this.paintRendered(c)
+    }
+    finally {
+      this.dirtyNext = this.dirtyBefore
+      this.dirtyBefore = dirtyNext
+    }
+  }
+
+  paintRendered(c: CanvasRenderingContext2D) {
+    this.dirtyNext.rect.drawImageTranslated(
       this.canvas.el,
       c,
       this.pr,
       true,
-      dirtyNext.scroll,
+      this.dirtyNext.scroll,
     )
   }
+
   @fx trigger_init_on_first__() {
     const { didRender } = whenNot(this)
     const { isVisible } = when(this)

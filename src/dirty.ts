@@ -3,6 +3,7 @@ import { $, fn } from 'signal'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
+import { Canvas } from './canvas.ts'
 
 export class Dirty {
   constructor(
@@ -16,10 +17,13 @@ export class Dirty {
     $()
     return this._view
       .set(this.rect)
-      .translateByPos(this.scroll).floorCeil() as $<Rect>
+      .translateByPos(this.scroll)
+      .floorCeil() as $<Rect>
   }
-  @fn update() {
-    return this.rect.set(this.owner.view).floorCeil() as $<Rect>
+  update() {
+    return this.rect
+      .set(this.owner.view)
+      .floorCeil() as $<Rect>
   }
   @fn redrawIntersectionRect(
     ir: Rect, c: CanvasRenderingContext2D, pr: number) {

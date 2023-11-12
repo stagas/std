@@ -71,13 +71,19 @@ export class Anim {
   get active() {
     this.updated
     let pass = 0
-    for (const it of this.its) {
+    for (const it of this.flatIts) {
       // if (it.animable.need) {
       //   console.log(it.constructor.name)
       // }
       pass |= it.animable.need
     }
     return pass
+  }
+  get flatIts() {
+    this.updated
+    const its = [...Animable.traverse(this.its ?? [])]
+    // console.log(its)
+    return its
   }
   @fn removeAll() {
     this.its = []
@@ -100,7 +106,7 @@ export class Anim {
   @fn tick = (ms?: number) => {
     if (this.isPaused) return
 
-    const { state, its, step, maxDeltaTime, now: before } = this
+    const { state, flatIts: its, step, maxDeltaTime, now: before } = this
     let { acc } = this
 
     const now = ms ?? performance.now()

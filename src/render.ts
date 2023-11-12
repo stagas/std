@@ -26,6 +26,7 @@ export class Render
   debug = Debug.None //Overlap
 
   needDirect = false
+  needDirectOne = false
   preferDirect = false
   wasDirect = false
 
@@ -61,6 +62,7 @@ export class Render
   *traverse(
     its: Renderable.It[],
     c: CanvasRenderingContext2D,
+    depth = 0
   ): Generator<Renderable.It> {
     const { scroll } = this
 
@@ -70,13 +72,13 @@ export class Render
 
       if (r.scroll) {
         scroll.add(r.scroll).round()
-        if (rIts) yield* this.traverse(rIts, c)
+        if (rIts) yield* this.traverse(rIts, c, depth + 1)
         scroll.sub(r.scroll).round()
-        yield it
+        if (depth) yield it
       }
       else {
-        if (rIts) yield* this.traverse(rIts, c)
-        yield it
+        if (rIts) yield* this.traverse(rIts, c, depth + 1)
+        if (depth) yield it
       }
     }
   }
@@ -142,6 +144,7 @@ class RenderAnimable extends Animable {
       painted,
       overlaps,
       needDirect,
+      needDirectOne,
       preferDirect,
       drawOver,
     } = it
@@ -199,7 +202,7 @@ class RenderAnimable extends Animable {
       r.dirtyNext.scroll.set(scroll)
 
       if (r.canDirectDraw) {
-        if (it.needDirect) {
+        if (it.needDirect || it.needDirectOne) {
           r.opDirect = true
         }
         else if (it.preferDirect && r.shouldPaint) {
@@ -225,24 +228,27 @@ class RenderAnimable extends Animable {
 
     for (const r of clearing) {
       painted.delete(r)
-      if (!r.fillClear) clearingRects.add(r.dirtyBefore.view)
+      if (r.opClear || !r.isVisible || (!r.fillClear && !r.noBelowRedraw)) clearingRects.add(r.dirtyBefore.view)
+      r.opClear = false
       // if (!r.fillClear)
       // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       // console.log(r.dirtyBefore.view.text, r.it.constructor.name)
     }
 
     for (const r of painting) {
+      // console.log(r.view.text, r.it.constructor.name)
       painted.add(r)
 
       if (r.didDraw && !clearing.has(r)) {
-        if (!r.fillClear) clearingRects.add(r.dirtyBefore.view)
+        if (!r.fillClear && !r.noBelowRedraw) clearingRects.add(r.dirtyBefore.view)
         // if (!r.fillClear)
         // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       }
 
       r.dirtyNext.update()
 
-      if (!r.fillClear) clearingRects.add(r.dirtyNext.view)
+      if (r.noBelowRedraw) r.dirtyNext.view.clear(c)
+      else if (!r.fillClear) clearingRects.add(r.dirtyNext.view)
       else drawOver.add(r)
       // if (!r.fillClear)
       // else r.dirtyNext.view.drawImage(r.dirtyNext.canvas.el, c, pr, true)
@@ -251,7 +257,7 @@ class RenderAnimable extends Animable {
     // -----
     // -----
 
-    const shouldDirect = needDirect //|| preferDirect
+    const shouldDirect = needDirect || needDirectOne //|| preferDirect
 
     // -----
     // -----
@@ -360,6 +366,9 @@ class RenderAnimable extends Animable {
 
     clearingRects.count = 0
 
+    if (needDirectOne) it.needDirectOne = false
+
+    // console.log(needDirect, needDirectOne)
     // cleared.clear()
     // overlaps.count = 0
     // redraws.count = 0

@@ -35,6 +35,7 @@ export abstract class Renderable {
   canDirectDraw?: boolean
   fillClear?: string
   clearBeforeRender = true
+  noBelowRedraw = false
   scroll?: $<Point>
   offset?: $<Point>
   public init?(c: CanvasRenderingContext2D): void
@@ -93,7 +94,8 @@ export abstract class Renderable {
 
   get shouldClear() {
     return this.renders && (this.didDraw && (
-      this.shouldPaint
+      this.opClear
+      || this.shouldPaint
       || !this.isVisible
       || this.isHidden
     ))

@@ -158,6 +158,7 @@ class RenderAnimable extends Animable {
 
     log('draw', its.length)
 
+    // console.log(its)
     if (!its.length) {
       return
     }

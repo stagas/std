@@ -3,7 +3,6 @@ import { $, fn } from 'signal'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
-import { Canvas } from './canvas.ts'
 
 export class Dirty {
   constructor(

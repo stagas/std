@@ -1,10 +1,11 @@
 // log.active
-import { $, fx, nu, of, when, whenNot } from 'signal'
+import { $, fx, of, when, whenNot } from 'signal'
 import { MouseButton } from 'utils'
 import { DOUBLE_CLICK_MS, SINGLE_CLICK_MS } from './constants.ts'
 import { Mouseable } from './mouseable.ts'
 import { Point } from './point.ts'
 import { PointerEventType } from './pointer.ts'
+import { Rect } from './rect.ts'
 import { Scene } from './scene.ts'
 
 export class Mouse extends Scene {
@@ -21,6 +22,8 @@ export class Mouse extends Scene {
   hoverIt?: Mouseable.It | null
   focusIt?: Mouseable.It | null | undefined
   downIt?: Mouseable.It | null | undefined
+
+  clipArea = $(new Rect)
 
   @fx prevent_downIt_invisible() {
     const { downIt } = when(this)
@@ -72,7 +75,7 @@ export class Mouse extends Scene {
   }
   *traverseGetItAtPoint(it: Mouseable.It, downIt?: Mouseable.It | null | undefined): Generator<Mouseable.It> {
     const { renderable: r, mouseable: m } = it
-    const { pointer: { pos }, origin } = of(this)
+    const { pointer: { pos }, origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
 
     origin.add(r.layout)
 
@@ -91,23 +94,34 @@ export class Mouse extends Scene {
       if (!curr.mouseable.it.renderable.isVisible) {
         continue
       }
+      // if (curr.renderable.clipContents) {
+      //   clipArea.setSize(curr.renderable.view.size)
+      // }
       yield* this.traverseGetItAtPoint(curr, downIt)
+      if (curr.renderable.clipContents) {
+        clipArea.zero()
+      }
     }
 
     if (r.scroll) origin.sub(r.scroll)
 
+    origin.sub(r.layout)
+
     let item: Mouseable.It | false | undefined
-    if (item = m.getItAtPoint(
-      m.mouse.pos.set(pos).sub(origin)
+    const mousePos = m.mouse.pos.set(pos).sub(origin)
+    if (item = (
+      clipArea.hasSize
+        ? clipArea.isPointWithin(mousePos)
+        && m.getItAtPoint(mousePos)
+        : m.getItAtPoint(mousePos)
     )) {
       if (!downIt) yield item
     }
-
-    origin.sub(r.layout)
   }
   *getItsUnderPointer(it: Mouseable.It, downIt?: Mouseable.It | null | undefined) {
-    const { origin } = of(this)
+    const { origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
     origin.zero()
+    clipArea.zero()
     yield* this.traverseGetItAtPoint(it, downIt)
   }
   @fx handle_pointer_event() {

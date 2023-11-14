@@ -17,14 +17,24 @@ const enum Debug {
   All = 127
 }
 
+export const enum TraverseOp {
+  Item,
+  Enter,
+  Leave
+}
+
 export abstract class Renderable {
   debug = Debug.Redraw
 
-  static *traverse(its: Renderable.It[]): Generator<Renderable.It> {
+  static *traverse(its: Renderable.It[]): Generator<[op: TraverseOp, it: Renderable.It]> {
     for (const it of its) {
       const r = it.renderable
-      if (r.its) yield* Renderable.traverse(r.its)
-      yield it as any
+      if (r.its) {
+        yield [TraverseOp.Enter, it] as any
+        yield* Renderable.traverse(r.its)
+        yield [TraverseOp.Leave, it] as any
+      }
+      yield [TraverseOp.Item, it] as any
     }
   }
   get its(): Renderable.It[] | undefined { return }
@@ -36,6 +46,7 @@ export abstract class Renderable {
   fillClear?: string
   clearBeforeRender = true
   noBelowRedraw = false
+  clipContents = false
   scroll?: $<Point>
   offset?: $<Point>
   public init?(c: CanvasRenderingContext2D): void
@@ -67,6 +78,21 @@ export abstract class Renderable {
       : this._view
   }
 
+  copyView?: Rect
+  @fx update_from_copyView() {
+    const { copyView, view } = of(this)
+    const { x, y, w, h } = copyView
+    $()
+    view.set(copyView)
+  }
+  copySize?: Point
+  @fx update_from_copySize() {
+    const { copySize, view } = of(this)
+    const { w, h } = copySize
+    $()
+    view.size.setParameters(w, h)
+  }
+
   layout = $(new Point)
 
   need = Renderable.Need.Idle
@@ -93,7 +119,6 @@ export abstract class Renderable {
       || this.needInit
     ))
   }
-
   get shouldClear() {
     return this.renders && (this.didDraw && (
       this.opClear
@@ -102,29 +127,22 @@ export abstract class Renderable {
       || this.isHidden
     ))
   }
-
   get shouldRender() {
     return this.renders && (!this.didRender || this.needRender)
   }
-
   get shouldPaint() {
     return this.renders && this.isVisible && (this.opPaint || !this.didDraw || this.needDraw || this.needRender)
   }
-
   clearBefore(c: CanvasRenderingContext2D) {
     this.dirtyBefore.view.clear(c)
     this.didDraw = false
   }
-
   clearNext(c: CanvasRenderingContext2D) {
     this.dirtyNext.view.clear(c)
   }
-
   dirtyBefore = $(new Dirty(this))
   dirtyNext = $(new Dirty(this))
-
   redraws = $(new FixedArray<Rect>)
-
   redrawIntersectionRect(c: CanvasRenderingContext2D, rect: Rect) {
     const { pr, dirtyBefore: dirty } = this
     dirty.redrawIntersectionRect(rect, c, pr)
@@ -133,14 +151,12 @@ export abstract class Renderable {
       rect.stroke(c, '#' + randomHex())
     }
   }
-
   redraw(c: CanvasRenderingContext2D) {
     const { redraws } = this
     for (const rect of mergeRects(redraws.array, redraws.count).values()) {
       this.redrawIntersectionRect(c, rect)
     }
   }
-
   render() {
     // if (this.draw) {
     const { rect, canvas, clearBeforeRender } = this
@@ -153,7 +169,6 @@ export abstract class Renderable {
     this.didRender = true
     this.needRender = false
   }
-
   paint(c: CanvasRenderingContext2D) {
     const { dirtyNext } = this
     try {
@@ -185,7 +200,6 @@ export abstract class Renderable {
       this.dirtyBefore = dirtyNext
     }
   }
-
   paintRendered(c: CanvasRenderingContext2D) {
     this.dirtyNext.rect.drawImageTranslated(
       this.canvas.el,
@@ -195,7 +209,6 @@ export abstract class Renderable {
       this.dirtyNext.origin,
     )
   }
-
   @fx trigger_init_on_first__() {
     const { didRender } = whenNot(this)
     const { isVisible } = when(this)
@@ -203,7 +216,7 @@ export abstract class Renderable {
     this.needInit = true
   }
   @fx update_rect_on_resize_view__() {
-    const { renders } = when(this)
+    // const { renders } = when(this)
     const { w, h } = this.view
     $()
     this.rect.w = Math.max(this.rect.w, w)

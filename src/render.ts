@@ -6,7 +6,7 @@ import { mergeRects } from './clip.ts'
 import { FixedArray } from './fixed-array.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
-import { Renderable } from './renderable.ts'
+import { Renderable, TraverseOp } from './renderable.ts'
 import { World } from './world.ts'
 
 const enum Debug {
@@ -68,18 +68,18 @@ export class Render
       const { renderable: r } = it
       const rIts = r.its
 
-      origin.add(r.layout).round()
       if (r.scroll) {
-        origin.add(r.scroll).round()
+        origin.add(r.layout).add(r.scroll).round()
         if (rIts) yield* this.traverse(rIts, c, depth + 1)
-        origin.sub(r.scroll).round()
+        origin.sub(r.scroll).sub(r.layout).round()
         if (depth) yield it
       }
       else {
+        origin.add(r.layout).round()
         if (rIts) yield* this.traverse(rIts, c, depth + 1)
+        origin.sub(r.layout).round()
         if (depth) yield it
       }
-      origin.sub(r.layout).round()
     }
   }
   get animable() {
@@ -100,7 +100,7 @@ class RenderAnimable extends Animable {
   }
   @fx trigger_anim_draw() {
     let pass = false
-    for (const { renderable: r } of this.renderableIts) {
+    for (const [, { renderable: r }] of this.renderableIts) {
       if (r.isVisible && r.need) {
         // console.log(r.need, r.it.constructor.name, r.isVisible)
         pass = true
@@ -114,7 +114,7 @@ class RenderAnimable extends Animable {
   @fx trigger_redraw_on_viewport_resize() {
     const { w, h } = this.it.world.screen.viewport
     $()
-    for (const it of this.renderableIts) {
+    for (const [, it] of this.renderableIts) {
       if (it.renderable.renders) {
         it.renderable.needDraw = true
       }
@@ -134,7 +134,7 @@ class RenderAnimable extends Animable {
   }
   @fn tickOne(dt = 1) {
     const { renderableIts: its } = this
-    for (const it of its) {
+    for (const [, it] of its) {
       it.renderable.dt = dt
     }
   }
@@ -173,7 +173,8 @@ class RenderAnimable extends Animable {
     }
 
     let index = 0
-    for (const { renderable: r } of its) {
+    for (const [op, { renderable: r }] of its) {
+      if (op !== TraverseOp.Item) continue
       r.index = index++
       if (r.shouldInit) {
         r.init!(r.canvas.c)
@@ -319,7 +320,21 @@ class RenderAnimable extends Animable {
     //   }
     // }
 
-    for (const { renderable: r } of its) {
+    for (const [op, { renderable: r }] of its) {
+      if (op === TraverseOp.Enter) {
+        if (r.clipContents) {
+          c.save()
+          r.dirtyNext.view.clip(c)
+        }
+        continue
+      }
+      else if (op === TraverseOp.Leave) {
+        if (r.clipContents) {
+          c.restore()
+        }
+        continue
+      }
+
       r.opClear = false
 
       if (painting.has(r)) {
@@ -400,7 +415,8 @@ class RenderAnimable extends Animable {
     // console.log('need direct', it.needDirect)
     if (its.length) this.didDraw = true
 
-    if (its.length && its.every(it => !it.renderable.isVisible || !it.renderable.needDraw)) {
+    if (its.length && its.every(([, it]) =>
+      !it.renderable.isVisible || !it.renderable.needDraw)) {
       this.need &= ~Animable.Need.Draw
     }
     // else {

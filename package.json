@@ -2,6 +2,7 @@
   "name": "std",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "test": "utr --bro src/index.ts"

@@ -1,14 +1,13 @@
 // log.active
 import { $, fn, fx, of } from 'signal'
-import { colory, maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
+import { maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
 import { Animable } from './animable.ts'
-import { Dirty } from './dirty.ts'
+import { mergeRects } from './clip.ts'
 import { FixedArray } from './fixed-array.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
 import { World } from './world.ts'
-import { mergeRects } from './clip.ts'
 
 const enum Debug {
   None = 0,
@@ -101,14 +100,23 @@ class RenderAnimable extends Animable {
   @fx trigger_anim_draw() {
     let pass = false
     for (const { renderable: r } of this.renderableIts) {
-      if (r.need) {
-        // console.log(r.need, r.it.constructor.name)
+      if (r.isVisible && r.need) {
+        // console.log(r.need, r.it.constructor.name, r.isVisible)
         pass = true
       }
     }
     $()
     if (pass) {
       this.need |= Animable.Need.Draw
+    }
+  }
+  @fx trigger_redraw_on_viewport_resize() {
+    const { w, h } = this.it.world.screen.viewport
+    $()
+    for (const it of this.renderableIts) {
+      if (it.renderable.renders) {
+        it.renderable.needDraw = true
+      }
     }
   }
   @fn init() {
@@ -230,7 +238,6 @@ class RenderAnimable extends Animable {
     for (const r of clearing) {
       painted.delete(r)
       if (r.opClear || !r.isVisible || (!r.fillClear && !r.noBelowRedraw)) clearingRects.add(r.dirtyBefore.view)
-      r.opClear = false
       // if (!r.fillClear)
       // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       // console.log(r.dirtyBefore.view.text, r.it.constructor.name)
@@ -241,7 +248,7 @@ class RenderAnimable extends Animable {
       painted.add(r)
 
       if (r.didDraw && !clearing.has(r)) {
-        if (!r.fillClear && !r.noBelowRedraw) clearingRects.add(r.dirtyBefore.view)
+        if (r.opClear || (!r.fillClear && !r.noBelowRedraw)) clearingRects.add(r.dirtyBefore.view)
         // if (!r.fillClear)
         // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       }
@@ -304,6 +311,8 @@ class RenderAnimable extends Animable {
     // }
 
     for (const { renderable: r } of its) {
+      r.opClear = false
+
       if (painting.has(r)) {
         r.paint(c)
         painted.add(r)
@@ -375,15 +384,16 @@ class RenderAnimable extends Animable {
     // redraws.count = 0
     // it.needDirect = false
 
+    // console.log('tick')
     // console.log('need direct', it.needDirect)
     if (its.length) this.didDraw = true
 
     if (its.length && its.every(it => !it.renderable.isVisible || !it.renderable.needDraw)) {
       this.need &= ~Animable.Need.Draw
     }
-    else {
-      const itt = its.find(it => it.renderable.needDraw)
-      if (itt) console.log(itt.renderable.need, itt.constructor.name)
-    }
+    // else {
+    //   const itt = its.find(it => it.renderable.needDraw)
+    //   if (itt) console.log(itt.renderable.need, itt.constructor.name)
+    // }
   }
 }

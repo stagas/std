@@ -67,6 +67,8 @@ export abstract class Renderable {
       : this._view
   }
 
+  layout = $(new Point)
+
   need = Renderable.Need.Idle
   needInit = flag(this, 'need', Renderable.Need.Init)
   needDraw = flag(this, 'need', Renderable.Need.Draw)
@@ -167,7 +169,7 @@ export abstract class Renderable {
           this.init?.(c)
           this.draw!(c, tempPoint.set(dirtyNext.view.pos))
           c.restore()
-          return
+          return this.dirtyNext.view
         }
       }
 
@@ -176,6 +178,7 @@ export abstract class Renderable {
       }
 
       this.paintRendered(c)
+      return this.dirtyNext.view
     }
     finally {
       this.dirtyNext = this.dirtyBefore
@@ -189,7 +192,7 @@ export abstract class Renderable {
       c,
       this.pr,
       true,
-      this.dirtyNext.scroll,
+      this.dirtyNext.origin,
     )
   }
 

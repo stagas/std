@@ -12,7 +12,7 @@ export class Mouse extends Scene {
 
   get pointer() { return this.ctx.world.pointer }
 
-  scroll = $(new Point)
+  origin = $(new Point)
 
   downCount = 0
   downTime = 0
@@ -72,23 +72,20 @@ export class Mouse extends Scene {
   }
   *traverseGetItAtPoint(it: Mouseable.It, downIt?: Mouseable.It | null | undefined): Generator<Mouseable.It> {
     const { renderable: r, mouseable: m } = it
-    const { pointer: { pos }, scroll } = of(this)
+    const { pointer: { pos }, origin } = of(this)
+
+    origin.add(r.layout)
 
     // First find the downIt and its scroll, if given,
     // and yield that before everything else.
     if (it === downIt) {
-      if (m.hitAreaNormalize) {
-        m.mouse.pos.set(pos)
-      }
-      else {
-        m.mouse.pos.set(pos).sub(scroll)
-      }
+      m.mouse.pos.set(pos).sub(origin)
       yield downIt
       yield* this.getItsUnderPointer(this.it)
       return
     }
 
-    if (r.scroll) scroll.add(r.scroll)
+    if (r.scroll) origin.add(r.scroll)
 
     if (m.its) for (const curr of m.its) {
       if (!curr.mouseable.it.renderable.isVisible) {
@@ -97,20 +94,20 @@ export class Mouse extends Scene {
       yield* this.traverseGetItAtPoint(curr, downIt)
     }
 
-    if (r.scroll) scroll.sub(r.scroll)
+    if (r.scroll) origin.sub(r.scroll)
 
     let item: Mouseable.It | false | undefined
     if (item = m.getItAtPoint(
-      m.hitAreaNormalize
-        ? m.mouse.pos.set(pos)
-        : m.mouse.pos.set(pos).sub(scroll)
+      m.mouse.pos.set(pos).sub(origin)
     )) {
       if (!downIt) yield item
     }
+
+    origin.sub(r.layout)
   }
   *getItsUnderPointer(it: Mouseable.It, downIt?: Mouseable.It | null | undefined) {
-    const { scroll } = of(this)
-    scroll.zero()
+    const { origin } = of(this)
+    origin.zero()
     yield* this.traverseGetItAtPoint(it, downIt)
   }
   @fx handle_pointer_event() {

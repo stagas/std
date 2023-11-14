@@ -27,7 +27,6 @@ export abstract class Mouseable {
   constructor(
     public it: Mouseable.It,
     public hitArea: Mouseable.HitArea = it.renderable.view,
-    public hitAreaNormalize = false,
   ) { }
 
   isDown = false

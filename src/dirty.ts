@@ -10,14 +10,14 @@ export class Dirty {
     public owner: Renderable,
     public rect = $(new Rect)
   ) { }
-  scroll = $(new Point)
+  origin = $(new Point)
   _view = $(new Rect)
   get view() {
-    const { rect: { x, y, w, h }, scroll: { x: sx, y: sy } } = this
+    const { rect: { x, y, w, h }, origin: { x: sx, y: sy } } = this
     $()
     return this._view
       .set(this.rect)
-      .translateByPos(this.scroll)
+      .translateByPos(this.origin)
       .floorCeil() as $<Rect>
   }
   update() {

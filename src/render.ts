@@ -15,6 +15,7 @@ const enum Debug {
   Dirty /*  */ = 1 << 1,
   Visible /**/ = 1 << 2,
   Overlap /**/ = 1 << 3,
+  Painted /**/ = 1 << 4,
   All = 127
 }
 
@@ -22,7 +23,7 @@ export class Render
   implements Animable.It {
   constructor(public world: World) { }
 
-  debug = Debug.None //Overlap
+  debug = Debug.None //Painted //Overlap
 
   needDirect = false
   needDirectOne = false
@@ -31,9 +32,7 @@ export class Render
 
   view = $(new Rect)
   visible = $(new Rect)
-  scroll = $(new Point)
-  // previous = $(new FixedArray<Renderable>)
-  // current = $(new FixedArray<Renderable>)
+  origin = $(new Point)
   visited = new Set<Renderable>()
   clearing = new Set<Renderable>()
   clearingRects = $(new FixedArray<Rect>)
@@ -63,22 +62,24 @@ export class Render
     c: CanvasRenderingContext2D,
     depth = 0
   ): Generator<Renderable.It> {
-    const { scroll } = this
+    const { origin } = this
 
     for (const it of its) {
       const { renderable: r } = it
       const rIts = r.its
 
+      origin.add(r.layout).round()
       if (r.scroll) {
-        scroll.add(r.scroll).round()
+        origin.add(r.scroll).round()
         if (rIts) yield* this.traverse(rIts, c, depth + 1)
-        scroll.sub(r.scroll).round()
+        origin.sub(r.scroll).round()
         if (depth) yield it
       }
       else {
         if (rIts) yield* this.traverse(rIts, c, depth + 1)
         if (depth) yield it
       }
+      origin.sub(r.layout).round()
     }
   }
   get animable() {
@@ -140,7 +141,7 @@ class RenderAnimable extends Animable {
   draw(t = 1) {
     const { it, tempRect, renderableIts: its, debug } = this
     const {
-      scroll,
+      origin,
       visible,
       view,
       // previous,
@@ -187,13 +188,13 @@ class RenderAnimable extends Animable {
       }
     }
 
-    scroll.zero()
+    origin.zero()
 
     // determine new visibility
     visible.size.set(view.size)
 
     for (const { renderable: r } of it.traverse(it.its, c)) {
-      visible.pos.set(scroll.inverted)
+      visible.pos.set(origin.inverted)
       // visible.fill(c, '#f00')
 
       visited.add(r)
@@ -205,10 +206,10 @@ class RenderAnimable extends Animable {
       //   r.needInit = r.needRender = r.needDraw = true
       // }
 
-      if (r.renders && r.isVisible && !r.dirtyBefore.scroll.equals(scroll)) {
+      if (r.renders && r.isVisible && !r.dirtyBefore.origin.equals(origin)) {
         r.opPaint = true
       }
-      r.dirtyNext.scroll.set(scroll)
+      r.dirtyNext.origin.set(origin)
 
       if (r.canDirectDraw) {
         if (it.needDirect || it.needDirectOne) {
@@ -260,6 +261,14 @@ class RenderAnimable extends Animable {
       else drawOver.add(r)
       // if (!r.fillClear)
       // else r.dirtyNext.view.drawImage(r.dirtyNext.canvas.el, c, pr, true)
+    }
+
+    // TODO: this is probably needed, for non-painting items that have layout
+    // REVIEW
+    for (const r of visited) {
+      if (!painting.has(r)) {
+        r.dirtyNext.update()
+      }
     }
 
     // -----
@@ -314,8 +323,11 @@ class RenderAnimable extends Animable {
       r.opClear = false
 
       if (painting.has(r)) {
-        r.paint(c)
+        const view = r.paint(c)
         painted.add(r)
+        if (debug & Debug.Painted) {
+          view?.stroke(c, '#' + randomHex())
+        }
         // r.dirtyNext.view.stroke(c, '#' + randomHex())
       }
       else {

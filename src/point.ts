@@ -85,7 +85,7 @@ export class Point extends Shape {
     return $(new Point)
   }
   get inverted() {
-    const {x, y} = this
+    const { x, y } = this
     $()
     return this.$inverted.setParameters(-x, -y) as $<Point>
   }
@@ -101,6 +101,10 @@ export class Point extends Shape {
     else {
       return this.x === o.x && this.y === o.y
     }
+  }
+  equalsParameters(x: number, y: number) {
+    // y is more likely
+    return this.y === y && this.x === x
   }
   safe() {
     $.fx(() => {

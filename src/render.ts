@@ -23,7 +23,7 @@ export class Render
   implements Animable.It {
   constructor(public world: World) { }
 
-  debug = Debug.Painted //Overlap
+  debug = Debug.None //Overlap
 
   needDirect = false
   needDirectOne = false
@@ -105,6 +105,7 @@ class RenderAnimable extends Animable {
       if (r.isVisible && r.need) {
         // console.log(r.need, r.it.constructor.name, r.isVisible)
         pass = true
+        break
       }
     }
     $()
@@ -194,40 +195,64 @@ class RenderAnimable extends Animable {
 
     // determine new visibility
     visible.size.set(view.size)
+    visible.pos.setParameters(-origin.x, -origin.y)
 
-    for (const { renderable: r } of it.traverse(it.its, c)) {
-      visible.pos.set(origin.inverted)
-      // visible.fill(c, '#f00')
+    for (const [op, { renderable: r }] of its) {
+      if (op === TraverseOp.Item) {
+        // visible.fill(c, '#f00')
+        visited.add(r)
 
-      visited.add(r)
+        // const wasVisible = r.isVisible
+        r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
 
-      // const wasVisible = r.isVisible
-      r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
+        // if (!wasVisible && r.isVisible) {
+        //   r.needInit = r.needRender = r.needDraw = true
+        // }
 
-      // if (!wasVisible && r.isVisible) {
-      //   r.needInit = r.needRender = r.needDraw = true
-      // }
+        if (r.isVisible) {
+          if (r.renders && !r.dirtyBefore.origin.equalsParameters(origin.x, origin.y)) {
+            r.opPaint = true
+          }
+          r.dirtyNext.origin.x = origin.x
+          r.dirtyNext.origin.y = origin.y
 
-      if (r.renders && r.isVisible && !r.dirtyBefore.origin.equals(origin)) {
-        r.opPaint = true
-      }
-      r.dirtyNext.origin.set(origin)
+          if (r.canDirectDraw) {
+            if (it.needDirect || it.needDirectOne) {
+              r.opDirect = true
+            }
+            else if (it.preferDirect && r.shouldPaint) {
+              r.opDirect = true
+            }
+          }
 
-      if (r.canDirectDraw) {
-        if (it.needDirect || it.needDirectOne) {
-          r.opDirect = true
+          if (r.shouldPaint) {
+            painting.add(r)
+          }
+          // a non-'renders' can request draw
+          else if (r.needDraw) {
+            r.needDraw = false
+          }
         }
-        else if (it.preferDirect && r.shouldPaint) {
-          r.opDirect = true
+      }
+      else {
+        if (op === TraverseOp.Enter) {
+          if (r.scroll) {
+            origin.add(r.layout).add(r.scroll).round()
+          }
+          else {
+            origin.add(r.layout).round()
+          }
         }
-      }
-
-      if (r.shouldPaint) {
-        painting.add(r)
-      }
-      // a non-'renders' can request draw
-      else if (r.needDraw) {
-        r.needDraw = false
+        else if (op === TraverseOp.Leave) {
+          if (r.scroll) {
+            origin.sub(r.scroll).sub(r.layout).round()
+          }
+          else {
+            origin.sub(r.layout).round()
+          }
+        }
+        visible.pos.x = -origin.x
+        visible.pos.y = -origin.y
       }
     }
 
@@ -394,6 +419,8 @@ class RenderAnimable extends Animable {
           }
         }
       }
+
+
     }
 
     // -- prepare for next
@@ -421,8 +448,7 @@ class RenderAnimable extends Animable {
     // console.log('need direct', it.needDirect)
     if (its.length) this.didDraw = true
 
-    if (its.length && its.every(([, it]) =>
-      !it.renderable.isVisible || !it.renderable.needDraw)) {
+    if (its.length && its.every(isNotVisibleAndNotDrawing)) {
       this.need &= ~Animable.Need.Draw
     }
     // else {
@@ -430,4 +456,8 @@ class RenderAnimable extends Animable {
     //   if (itt) console.log(itt.renderable.need, itt.constructor.name)
     // }
   }
+}
+
+function isNotVisibleAndNotDrawing([, it]: [op: TraverseOp, it: Renderable.It]) {
+  return !it.renderable.isVisible || !it.renderable.needDraw
 }

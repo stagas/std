@@ -608,10 +608,10 @@ export class Rect extends Shape {
   intersectsRect(r2: Rect) {
     const r1 = this
     return (
-      r1.x < r2.right &&
-      r1.right > r2.x &&
       r1.y < r2.bottom &&
-      r1.bottom > r2.y
+      r1.bottom > r2.y &&
+      r1.x < r2.right &&
+      r1.right > r2.x
     )
     // return !(
     //   this.bottom - threshold < other.top

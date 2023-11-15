@@ -23,7 +23,7 @@ export class Render
   implements Animable.It {
   constructor(public world: World) { }
 
-  debug = Debug.None //Painted //Overlap
+  debug = Debug.Painted //Overlap
 
   needDirect = false
   needDirectOne = false
@@ -93,7 +93,8 @@ class RenderAnimable extends Animable {
   tempRect = $(new Rect)
   get renderableIts() {
     const { its } = this.it
-    return [...its.flatMap(it => it.renderable.flatIts)]
+    const rIts = [...its.flatMap(it => it.renderable.flatIts)]
+    return rIts
   }
   get debug() {
     return this.it.debug
@@ -223,6 +224,10 @@ class RenderAnimable extends Animable {
 
       if (r.shouldPaint) {
         painting.add(r)
+      }
+      // a non-'renders' can request draw
+      else if (r.needDraw) {
+        r.needDraw = false
       }
     }
 
@@ -359,6 +364,7 @@ class RenderAnimable extends Animable {
             for (const rect of clearingRects.values()) {
               // if (r.fillClear) continue
               // TODO: use only below intersection rect
+              // TODO: > r.index ?
               const ir = rect.intersectionRect(r.dirtyBefore.view)
               if (ir) {
                 poolArrayGet(overlaps.array, overlaps.count++, Rect.create)

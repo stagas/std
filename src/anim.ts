@@ -175,6 +175,7 @@ export class Anim {
       this.state = State.Stopping
       this.animFrame = requestAnimationFrame(this.tick)
     }
+    // console.log('tick')
   }
 
   // @fx print_isAnimating() {

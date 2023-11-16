@@ -172,7 +172,7 @@ export abstract class Renderable {
   }
   paint(c: CanvasRenderingContext2D) {
     const { dirtyNext } = this
-    try {
+    // try {
       this.didDraw = true
       this.needDraw = false
       this.opPaint = false
@@ -195,11 +195,11 @@ export abstract class Renderable {
 
       this.paintRendered(c)
       return this.dirtyNext.view
-    }
-    finally {
-      this.dirtyNext = this.dirtyBefore
-      this.dirtyBefore = dirtyNext
-    }
+    // }
+    // finally {
+    //   this.dirtyNext = this.dirtyBefore
+    //   this.dirtyBefore = dirtyNext
+    // }
   }
   paintRendered(c: CanvasRenderingContext2D) {
     this.dirtyNext.rect.drawImageTranslated(
@@ -209,6 +209,16 @@ export abstract class Renderable {
       true,
       this.dirtyNext.origin,
     )
+  }
+  @fx trigger_draw_on_dirty_origin() {
+    const { dirtyNext } = this
+    const { origin } = dirtyNext
+    const { x, y } = origin
+    $()
+    if (this.didDraw) {
+      this.needDraw = true
+      return
+    }
   }
   @fx trigger_init_on_first__() {
     const { didRender } = whenNot(this)

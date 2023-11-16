@@ -16,7 +16,7 @@ import { Box } from './box.ts'
 export class Sink extends Scene
   implements Renderable.It, Mouseable.It {
   get balls() {
-    $(); return $(new BallScene(this.ctx), { count: 2 })
+    $(); return $(new BallScene(this.ctx), { count: 100 })
   }
   get fixedBoxes() {
     $(); return $(new BoxScene(this.ctx), { speed: 0 })
@@ -35,8 +35,8 @@ export class Sink extends Scene
       get its() {
         return [
           it.fixedBoxes,
-          it.boxes1,
-          it.boxes2,
+          // it.boxes1,
+          // it.boxes2,
           it.balls,
         ]
       }
@@ -45,7 +45,6 @@ export class Sink extends Scene
       }
       @fn init(c: CanvasRenderingContext2D) {
         c.imageSmoothingEnabled = false
-        this.need &= ~Renderable.Need.Init
       }
     }
     return $(new SinkRenderable(it as Renderable.It))

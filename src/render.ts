@@ -32,13 +32,14 @@ export class Render
 
   view = $(new Rect)
   visible = $(new Rect)
-  origin = $(new Point)
+  origin = { x: 0, y: 0 }
   visited = new Set<Renderable>()
   clearing = new Set<Renderable>()
   clearingRects = $(new FixedArray<Rect>)
   overlaps = $(new FixedArray<Rect>)
   painting = new Set<Renderable>()
   painted = new Set<Renderable>()
+  updating = new Set<Renderable>()
   drawOver = new Set<Renderable>()
 
   its: Renderable.It[] = []
@@ -57,31 +58,31 @@ export class Render
     // this.updated++
     return this
   }
-  *traverse(
-    its: Renderable.It[],
-    c: CanvasRenderingContext2D,
-    depth = 0
-  ): Generator<Renderable.It> {
-    const { origin } = this
+  // *traverse(
+  //   its: Renderable.It[],
+  //   c: CanvasRenderingContext2D,
+  //   depth = 0
+  // ): Generator<Renderable.It> {
+  //   const { origin } = this
 
-    for (const it of its) {
-      const { renderable: r } = it
-      const rIts = r.its
+  //   for (const it of its) {
+  //     const { renderable: r } = it
+  //     const rIts = r.its
 
-      if (r.scroll) {
-        origin.add(r.layout).add(r.scroll).round()
-        if (rIts) yield* this.traverse(rIts, c, depth + 1)
-        origin.sub(r.scroll).sub(r.layout).round()
-        if (depth) yield it
-      }
-      else {
-        origin.add(r.layout).round()
-        if (rIts) yield* this.traverse(rIts, c, depth + 1)
-        origin.sub(r.layout).round()
-        if (depth) yield it
-      }
-    }
-  }
+  //     if (r.scroll) {
+  //       origin.add(r.layout).add(r.scroll).round()
+  //       if (rIts) yield* this.traverse(rIts, c, depth + 1)
+  //       origin.sub(r.scroll).sub(r.layout).round()
+  //       if (depth) yield it
+  //     }
+  //     else {
+  //       origin.add(r.layout).round()
+  //       if (rIts) yield* this.traverse(rIts, c, depth + 1)
+  //       origin.sub(r.layout).round()
+  //       if (depth) yield it
+  //     }
+  //   }
+  // }
   get animable() {
     $(); return $(new RenderAnimable(this))
   }
@@ -94,6 +95,12 @@ class RenderAnimable extends Animable {
   get renderableIts() {
     const { its } = this.it
     const rIts = [...its.flatMap(it => it.renderable.flatIts)]
+    $()
+    let index = 0
+    for (const [op, { renderable: r }] of rIts) {
+      if (op !== TraverseOp.Item) continue
+      r.index = index++
+    }
     return rIts
   }
   get debug() {
@@ -140,23 +147,124 @@ class RenderAnimable extends Animable {
       it.renderable.dt = dt
     }
   }
+  visit(op: TraverseOp, r: Renderable) {
+    const { it, it: { origin, painting, visible, updating } } = this
+
+    let o: Point
+    if (op === TraverseOp.Item) {
+      it.visited.add(r)
+
+      if (r.isVisible = !r.renders || (
+        !r.isHidden && r.view.intersectsRect(visible))) {
+        if (r.renders && !r.dirtyBefore.origin
+          .equalsParameters(origin.x, origin.y)) {
+          r.opPaint = true
+        }
+        o = r.dirtyNext.origin
+        o.x = origin.x
+        o.y = origin.y
+
+        if (r.canDirectDraw && (
+          it.needDirect
+          || it.needDirectOne
+          || (it.preferDirect && r.shouldPaint))) {
+          r.opDirect = true
+        }
+
+        if (r.shouldPaint) {
+          painting.add(r)
+        }
+        // a non-'renders' can request draw
+        else {
+          updating.add(r)
+          if (r.needDraw) {
+            r.needDraw = false
+          }
+        }
+      }
+    }
+    else {
+      if (op === TraverseOp.Enter) {
+        if (r.scroll) {
+          origin.x = Math.round(origin.x + r.layout.x + r.scroll.x)
+          origin.y = Math.round(origin.y + r.layout.y + r.scroll.y)
+        }
+        else {
+          origin.x = Math.round(origin.x + r.layout.x)
+          origin.y = Math.round(origin.y + r.layout.y)
+        }
+      }
+      else if (op === TraverseOp.Leave) {
+        if (r.scroll) {
+          origin.x = Math.round(origin.x - r.scroll.x - r.layout.x)
+          origin.y = Math.round(origin.y - r.scroll.y - r.layout.y)
+        }
+        else {
+          origin.x = Math.round(origin.x - r.layout.x)
+          origin.y = Math.round(origin.y - r.layout.y)
+        }
+      }
+      const p = visible.pos
+      p.x = -origin.x
+      p.y = -origin.y
+    }
+  }
+  redrawOverlaps(c: CanvasRenderingContext2D, pr: number, shouldDirect: boolean, r: Renderable) {
+    const { tempRect, it: { overlaps, clearingRects, debug, drawOver } } = this
+
+    if (shouldDirect) {
+      const ir = tempRect.intersectionRect(r.dirtyBefore.view)
+      if (ir) {
+        if (!r.didRender) r.render()
+        r.dirtyBefore.redrawIntersectionRect(tempRect, c, pr)
+      }
+    }
+    else {
+      overlaps.count = 0
+      for (const rect of clearingRects.values()) {
+        const ir = rect.intersectionRect(r.dirtyBefore.view)
+        if (ir) {
+          poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
+            .set(ir.floorCeil())
+        }
+      }
+      for (const other of drawOver.values()) {
+        if (other.index > r.index) break
+        const rect = other.dirtyNext.view
+        const ir = rect.intersectionRect(r.dirtyBefore.view)
+        if (ir) {
+          poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
+            .set(ir.floorCeil())
+        }
+      }
+
+      if (overlaps.count) {
+        if (!r.didRender) r.render()
+        for (const rect of mergeRects(overlaps.array, overlaps.count).values()) {
+          r.dirtyBefore.redrawIntersectionRect(rect, c, pr)
+
+          if (debug & Debug.Overlap) {
+            rect.stroke(c, '#' + randomHex())
+          }
+        }
+      }
+    }
+
+  }
   draw(t = 1) {
     const { it, tempRect, renderableIts: its, debug } = this
     const {
       origin,
       visible,
       view,
-      // previous,
-      // current,
       visited,
       clearing,
       clearingRects,
       painting,
       painted,
-      overlaps,
+      updating,
       needDirect,
       needDirectOne,
-      preferDirect,
       drawOver,
     } = it
     const {
@@ -165,95 +273,31 @@ class RenderAnimable extends Animable {
       skin: { colors: { bg } }
     } = of(it.world)
 
-    // const its = [...Renderable.traverse(it.its)]
-
     log('draw', its.length)
 
-    // console.log(its)
     if (!its.length) {
       return
     }
 
-    let index = 0
     for (const [op, { renderable: r }] of its) {
       if (op !== TraverseOp.Item) continue
-      r.index = index++
-      if (r.shouldInit) {
-        r.init!(r.canvas.c)
+
+      if (r.shouldInit || (r.needInit && !r.init)) {
+        r.init?.(r.canvas.c)
         r.needInit = false
+        r.needDraw = true
         r.didInit = true
-        if (r.renders) r.needDraw = true
-      }
-      else if (r.needInit && !r.init) {
-        r.needInit = false
-        r.didInit = true
-        if (r.renders) r.needDraw = true
       }
     }
 
-    origin.zero()
+    origin.x = origin.y = 0
 
     // determine new visibility
     visible.size.set(view.size)
     visible.pos.setParameters(-origin.x, -origin.y)
 
     for (const [op, { renderable: r }] of its) {
-      if (op === TraverseOp.Item) {
-        // visible.fill(c, '#f00')
-        visited.add(r)
-
-        // const wasVisible = r.isVisible
-        r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
-
-        // if (!wasVisible && r.isVisible) {
-        //   r.needInit = r.needRender = r.needDraw = true
-        // }
-
-        if (r.isVisible) {
-          if (r.renders && !r.dirtyBefore.origin.equalsParameters(origin.x, origin.y)) {
-            r.opPaint = true
-          }
-          r.dirtyNext.origin.x = origin.x
-          r.dirtyNext.origin.y = origin.y
-
-          if (r.canDirectDraw) {
-            if (it.needDirect || it.needDirectOne) {
-              r.opDirect = true
-            }
-            else if (it.preferDirect && r.shouldPaint) {
-              r.opDirect = true
-            }
-          }
-
-          if (r.shouldPaint) {
-            painting.add(r)
-          }
-          // a non-'renders' can request draw
-          else if (r.needDraw) {
-            r.needDraw = false
-          }
-        }
-      }
-      else {
-        if (op === TraverseOp.Enter) {
-          if (r.scroll) {
-            origin.add(r.layout).add(r.scroll).round()
-          }
-          else {
-            origin.add(r.layout).round()
-          }
-        }
-        else if (op === TraverseOp.Leave) {
-          if (r.scroll) {
-            origin.sub(r.scroll).sub(r.layout).round()
-          }
-          else {
-            origin.sub(r.layout).round()
-          }
-        }
-        visible.pos.x = -origin.x
-        visible.pos.y = -origin.y
-      }
+      this.visit(op, r)
     }
 
     for (const r of painted) {
@@ -262,7 +306,6 @@ class RenderAnimable extends Animable {
       }
 
       if (r.shouldClear) {
-        // console.log('CLEAR', r.it.constructor.name, r.it.renderable.need)
         clearing.add(r)
       }
     }
@@ -270,19 +313,13 @@ class RenderAnimable extends Animable {
     for (const r of clearing) {
       painted.delete(r)
       if (r.opClear || !r.isVisible || (!r.fillClear && !r.noBelowRedraw)) clearingRects.add(r.dirtyBefore.view)
-      // if (!r.fillClear)
-      // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
-      // console.log(r.dirtyBefore.view.text, r.it.constructor.name)
     }
 
     for (const r of painting) {
-      // console.log(r.view.text, r.it.constructor.name)
       painted.add(r)
 
       if (r.didDraw && !clearing.has(r)) {
         if (r.opClear || (!r.fillClear && !r.noBelowRedraw)) clearingRects.add(r.dirtyBefore.view)
-        // if (!r.fillClear)
-        // else r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
       }
 
       r.dirtyNext.update()
@@ -290,22 +327,16 @@ class RenderAnimable extends Animable {
       if (r.noBelowRedraw) r.dirtyNext.view.clear(c)
       else if (!r.fillClear) clearingRects.add(r.dirtyNext.view)
       else drawOver.add(r)
-      // if (!r.fillClear)
-      // else r.dirtyNext.view.drawImage(r.dirtyNext.canvas.el, c, pr, true)
     }
 
-    // TODO: this is probably needed, for non-painting items that have layout
-    // REVIEW
-    for (const r of visited) {
-      if (!painting.has(r)) {
-        r.dirtyNext.update()
-      }
+    for (const r of updating) {
+      r.dirtyNext.update()
     }
 
     // -----
     // -----
 
-    const shouldDirect = needDirect || needDirectOne //|| preferDirect
+    const shouldDirect = needDirect || needDirectOne
 
     // -----
     // -----
@@ -322,12 +353,6 @@ class RenderAnimable extends Animable {
     else {
       let ii = 0
 
-      // for (const rect of clearingRects.values()) {
-      //   ii++
-      //   rect.floorCeil().clear(c)
-      //   // .stroke(c, '#' + randomHex())
-      // }
-
       for (const rect of mergeRects(
         clearingRects.array,
         clearingRects.count
@@ -339,16 +364,7 @@ class RenderAnimable extends Animable {
           rect.stroke(c, '#' + randomHex())
         }
       }
-
-      // console.log('cleared', ii)
     }
-
-    // for (const r of clearing) {
-    //   if (r.fillClear) {
-    //     // r.dirtyBefore.view.drawImage(r.dirtyBefore.canvas.el, c, pr, true)
-    //     // r.dirtyNext.view.fill(c, r.fillClear)
-    //   }
-    // }
 
     for (const [op, { renderable: r }] of its) {
       if (op === TraverseOp.Enter) {
@@ -373,61 +389,15 @@ class RenderAnimable extends Animable {
         if (debug & Debug.Painted) {
           view?.stroke(c, '#' + randomHex())
         }
-        // r.dirtyNext.view.stroke(c, '#' + randomHex())
       }
       else {
         if (r.renders && r.isVisible) {
-          if (shouldDirect) {
-            const ir = tempRect.intersectionRect(r.dirtyBefore.view)
-            if (ir) {
-              if (!r.didRender) r.render()
-              r.dirtyBefore.redrawIntersectionRect(tempRect, c, pr)
-            }
-          }
-          else {
-            overlaps.count = 0
-            for (const rect of clearingRects.values()) {
-              // if (r.fillClear) continue
-              // TODO: use only below intersection rect
-              // TODO: > r.index ?
-              const ir = rect.intersectionRect(r.dirtyBefore.view)
-              if (ir) {
-                poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
-                  .set(ir.floorCeil())
-              }
-            }
-            for (const other of drawOver.values()) {
-              if (other.index > r.index) continue
-              const rect = other.dirtyNext.view
-              const ir = rect.intersectionRect(r.dirtyBefore.view)
-              if (ir) {
-                poolArrayGet(overlaps.array, overlaps.count++, Rect.create)
-                  .set(ir.floorCeil())
-              }
-            }
-
-            if (overlaps.count) {
-              if (!r.didRender) r.render()
-              for (const rect of mergeRects(overlaps.array, overlaps.count).values()) {
-                r.dirtyBefore.redrawIntersectionRect(rect, c, pr)
-
-                if (debug & Debug.Overlap) {
-                  rect.stroke(c, '#' + randomHex())
-                }
-              }
-            }
-          }
+          this.redrawOverlaps(c, pr, shouldDirect, r)
         }
       }
-
-
     }
 
     // -- prepare for next
-
-    // it.previous = current
-    // it.current = previous
-    // it.current.count = 0
 
     visited.clear()
     clearing.clear()
@@ -438,14 +408,6 @@ class RenderAnimable extends Animable {
 
     if (needDirectOne) it.needDirectOne = false
 
-    // console.log(needDirect, needDirectOne)
-    // cleared.clear()
-    // overlaps.count = 0
-    // redraws.count = 0
-    // it.needDirect = false
-
-    // console.log('tick')
-    // console.log('need direct', it.needDirect)
     if (its.length) this.didDraw = true
 
     if (its.length && its.every(isNotVisibleAndNotDrawing)) {

@@ -131,7 +131,8 @@ export abstract class Renderable {
     return this.renders && (!this.didRender || this.needRender)
   }
   get shouldPaint() {
-    return this.renders && this.isVisible && (this.opPaint || !this.didDraw || this.needDraw || this.needRender)
+    return this.renders && this.isVisible && (
+      this.opPaint || !this.didDraw || this.needDraw || this.needRender)
   }
   clearBefore(c: CanvasRenderingContext2D) {
     this.dirtyBefore.view.clear(c)

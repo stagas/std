@@ -28,7 +28,7 @@ export class Box extends Scene {
 const pi2 = Math.PI * 2
 class BoxRenderable extends Renderable {
   constructor(public it: Box, rect: $<Rect>) {
-    super(it, $(rect.round()))
+    super(it, true, $(rect.round()))
     this.canDirectDraw = !it.fixed
   }
   canDirectDraw = true
@@ -38,43 +38,42 @@ class BoxRenderable extends Renderable {
     c.imageSmoothingEnabled = false
     c.lineWidth = 1.5 / this.pr
     c.strokeStyle = '#fff'
-    this.need &= ~Renderable.Need.Init
-    this.need |= Renderable.Need.Render
   }
-  @fn render(c: CanvasRenderingContext2D, t: number, clear: boolean) {
+  @fn draw(c: CanvasRenderingContext2D, point: Point) {
     let { it, rect, phase, speed } = this
 
     // if (clear) {
     c.save()
+    point.translate(c)
     rect.pos.translateNegative(c)
     rect.fill(c)
     c.restore()
     // }
-    c.save()
-    c.beginPath()
-    const { w, hh } = rect
-    c.translate(0, hh)
-    c.moveTo(0, hh)
-    for (let x = 1; x < w; x += 6) {
-      c.lineTo(x, hh * Math.sin(phase))
-      phase += speed
-    }
-    c.stroke()
-    c.restore()
-    this.phase = phase % pi2
-    if (it.fixed) this.need &= ~Renderable.Need.Render
-    this.need |= Renderable.Need.Draw
+    // c.save()
+    // c.beginPath()
+    // const { w, hh } = rect
+    // c.translate(0, hh)
+    // c.moveTo(0, hh)
+    // for (let x = 1; x < w; x += 6) {
+    //   c.lineTo(x, hh * Math.sin(phase))
+    //   phase += speed
+    // }
+    // c.stroke()
+    // c.restore()
+    // this.phase = phase % pi2
+    // if (it.fixed) this.need &= ~Renderable.Need.Render
+    // this.need |= Renderable.Need.Draw
   }
-  draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
-    const { it, canvas, rect, pr } = this
-    rect.round().drawImageTranslated(
-      canvas.el,
-      c,
-      pr,
-      true,
-      scroll
-    )
+  // draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
+  //   const { it, canvas, rect, pr } = this
+  //   rect.round().drawImageTranslated(
+  //     canvas.el,
+  //     c,
+  //     pr,
+  //     true,
+  //     scroll
+  //   )
 
-    if (it.fixed) this.need &= ~Renderable.Need.Draw
-  }
+  //   if (it.fixed) this.need &= ~Renderable.Need.Draw
+  // }
 }

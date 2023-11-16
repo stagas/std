@@ -33,6 +33,9 @@ export class Ball extends Scene
 }
 
 class BallRenderable extends Renderable {
+  // canDirectDraw = true
+  // fillStyle = '#000'
+  // clearBeforeRender = false
   constructor(public it: Ball) { super(it) }
   @fx setup() {
     const { it } = this
@@ -54,27 +57,42 @@ class BallRenderable extends Renderable {
   @fn init(c: CanvasRenderingContext2D) {
     c.imageSmoothingEnabled = false
   }
-  @fn render(c: CanvasRenderingContext2D, t: number) {
-    const { it, rect } = this
+  @fn draw(c: CanvasRenderingContext2D, point: Point) {
+    const { it, view } = this
     const { circle } = it
     const { radius: r } = circle
     c.save()
-    c.translate(r, r)
-    circle.lerpPos.lerpPoint.translateNegative(c)
-    circle.lerpFill(c)
+    // console.log(point.text)
+    // point.translate(c)
+    // c.translate(r, r)
+    // it.circle.lerpPos.lerp(1)
+    // circle.lerpPos.lerpPoint.translateNegative(c)
+    // view.center.set(it.circle.lerpPos.lerpPoint)
+    // console.log(circle.pos.text)
+    // circle.fill(c)
+    view.center.set(circle.pos)
+    // console.log(point.text)
+    point.sub(circle.pos).add(r).translate(c)
+    circle.fill(c)
+    // c.fillStyle = '#f00'
+    // c.fillRect(0, 0, 100, 100)
+    // view.fill(c, '#f00').stroke(c, '#f00')
+    // console.log(this.isVisible)
+
+
+    // view.center.set(it.circle.pos).fill(c, '#f00')
     c.restore()
   }
-  @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
-    const { it, canvas, rect, pr } = of(this)
-    it.circle.lerpPos.lerp(t)
-    rect.center.set(it.circle.lerpPos.lerpPoint)
-    console.log(rect.center.text)
-    rect.round().drawImageTranslated(
-      canvas.el,
-      c,
-      pr,
-      true,
-      scroll
-    )
-  }
+  // @fn draw(c: CanvasRenderingContext2D, t: number, scroll: Point) {
+  //   const { it, canvas, rect, pr } = of(this)
+  //   it.circle.lerpPos.lerp(t)
+  //   rect.center.set(it.circle.lerpPos.lerpPoint)
+  //   rect.round().drawImageTranslated(
+  //     canvas.el,
+  //     c,
+  //     pr,
+  //     true,
+  //     scroll
+  //   )
+  // }
 }

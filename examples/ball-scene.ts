@@ -129,12 +129,11 @@ export class BallScene extends Scene
     const { Char, Special } = Keyboard.KeyKind
     class BallSceneKeyboardable extends Keyboardable {
       onKeyboardEvent(kind: Keyboard.EventKind): true | void | undefined {
-        const { key, char, special, alt, ctrl, shift } = this.kbd
+        const { key, char, special, alt, ctrl, shift } = this.keypress
 
         switch (kind) {
           case Down:
             if (ctrl && shift && char === 'J') {
-              console.log('HO HO HO')
               return true
             }
             break
@@ -142,7 +141,7 @@ export class BallScene extends Scene
           case Up:
             switch (key?.kind) {
               case Char:
-                this.kbd.textarea.value = ''
+                this.keypress.textarea.value = ''
                 return true
             }
             break
@@ -186,7 +185,7 @@ class BallSceneAnimable extends Animable {
   need = Animable.Need.Tick
   @fn tick() {
     const { gravity, motion, walls, balls, ctx: { world: { mouse } } } = this.it
-
+// console.log('tick')
     let need = 0
     cp.set(balls[0].pos)
     for (const ball of balls) {
@@ -272,7 +271,7 @@ class BallSceneAnimable extends Animable {
     const { balls } = this.it
 
     for (const ball of balls) {
-      ball.renderable.need |= Renderable.Need.Draw
+      ball.renderable.need |= Renderable.Need.Render
     }
     // world.canvas!.clear()
     // world.render.draw()

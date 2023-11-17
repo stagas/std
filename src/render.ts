@@ -155,10 +155,10 @@ class RenderAnimable extends Animable {
         // console.log(r.view.text, visible.text)
         r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
         if (r.renders && r.isVisible) {
-          // if (r.needRender || r.needDraw) {
+          if (r.didDraw || r.needRender || r.needDraw) {
             // r.clearNext(c)
             r.paint(c)
-          // }
+          }
 
         }
         else {

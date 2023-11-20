@@ -45,14 +45,14 @@ export class Keyboard {
       on(t, 'focus', () => { this.isFocused = true }),
     ]
   }
-  @fx textarea_follows_mouse() {
-    const { style, world } = of(this)
-    const { mouse } = of(world)
-    const { pointer: { pos } } = of(mouse)
-    const { x, y } = pos
-    $()
-    this.textareaRect.center.set(pos)
-  }
+  // @fx textarea_follows_mouse() {
+  //   const { style, world } = of(this)
+  //   const { mouse } = of(world)
+  //   const { pointer: { pos } } = of(mouse)
+  //   const { x, y } = pos
+  //   $()
+  //   this.textareaRect.center.set(pos)
+  // }
   // @fx move_textarea() {
   //   const { style } = of(this)
   //   style.transform =

@@ -28,7 +28,7 @@ export interface Theme {
   }
 }
 
-const theme = themes[8] as Theme
+const theme = themes[5] as Theme
 
 type ColorName =
   | 'black'

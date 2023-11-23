@@ -5,6 +5,7 @@ export class Skin {
   colors: Colors = $(new Colors)
   fonts = {
     sans: '"Jost", sans-serif',
-    mono: '"JetBrains Mono", monospace',
+    cond: '"Ubuntu Condensed", sans-serif',
+    mono: '"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace',
   }
 }

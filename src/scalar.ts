@@ -32,7 +32,7 @@ export class Scalar {
   }
   get normal() {
     const { value, min, scale } = this
-    return clamp(0, 1, (value - min) / scale)
+    return clamp(0, 1, (value - min) / scale) || 0
   }
   set normal(v) {
     const { scale, min, max } = this

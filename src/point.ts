@@ -7,6 +7,9 @@ import { drawText } from 'utils'
 export type PointLike = Point['json']
 
 export class Point extends Shape {
+  static create() {
+    return $(new Point)
+  }
   constructor(
     public x = 0,
     public y = 0,
@@ -391,6 +394,15 @@ export class Point extends Shape {
     const { w, h } = this
     c.fillStyle = color
     c.fillRect(0, 0, w, h)
+    return this
+  }
+  fillTranslated(
+    c: CanvasRenderingContext2D,
+    offset: Point,
+    color: string = this.fillColor) {
+    const { w, h } = this
+    c.fillStyle = color
+    c.fillRect(offset.x, offset.y, w, h)
     return this
   }
   moveTo(c: CanvasRenderingContext2D) {

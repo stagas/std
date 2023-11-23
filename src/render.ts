@@ -159,7 +159,6 @@ class RenderAnimable extends Animable {
             // r.clearNext(c)
             r.paint(c)
           }
-
         }
         else {
           r.needDraw = false

@@ -355,6 +355,15 @@ export class Rect extends Shape {
     c.strokeRect(x, y, w, h)
     return this
   }
+  strokeTranslated(
+    c: CanvasRenderingContext2D,
+    offset: Point,
+    color: string = this.fillColor) {
+    const { x, y, w, h } = this
+    c.strokeStyle = color
+    c.strokeRect(x + offset.x, y + offset.y, w, h)
+    return this
+  }
   strokeMargin(
     c: CanvasRenderingContext2D,
     margin = 0,

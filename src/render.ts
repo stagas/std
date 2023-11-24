@@ -165,6 +165,19 @@ class RenderAnimable extends Animable {
         }
       }
       else {
+        //   if (op === TraverseOp.Enter) {
+        //   if (r.clipContents) {
+        //     c.save()
+        //     r.dirtyNext.view.clip(c)
+        //   }
+        //   continue
+        // }
+        // else if (op === TraverseOp.Leave) {
+        //   if (r.clipContents) {
+        //     c.restore()
+        //   }
+        //   continue
+        // }
         if (op === TraverseOp.Enter) {
           if (r.scroll) {
             origin.x = Math.round(origin.x + r.layout.x + r.scroll.x)
@@ -173,6 +186,10 @@ class RenderAnimable extends Animable {
           else {
             origin.x = Math.round(origin.x + r.layout.x)
             origin.y = Math.round(origin.y + r.layout.y)
+          }
+          if (r.clipContents) {
+            c.save()
+            r.dirtyNext.view.clip(c)
           }
         }
         else if (op === TraverseOp.Leave) {
@@ -183,6 +200,9 @@ class RenderAnimable extends Animable {
           else {
             origin.x = Math.round(origin.x - r.layout.x)
             origin.y = Math.round(origin.y - r.layout.y)
+          }
+          if (r.clipContents) {
+            c.restore()
           }
         }
         const p = visible.pos
@@ -198,10 +218,10 @@ class RenderAnimable extends Animable {
     }
     // console.log('render')
     else {
-    //   // else {
-      const itt = its.find(([,it]) => it.renderable.needRender)
+      //   // else {
+      const itt = its.find(([, it]) => it.renderable.needRender)
       if (itt) console.log(itt[1].renderable.need, itt[1].constructor.name)
-    // // }
+      // // }
     }
   }
 }

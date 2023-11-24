@@ -8,6 +8,7 @@ import { FixedArray } from './fixed-array.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Scene } from './scene.ts'
+import { traverse } from './traverse.ts'
 
 const tempPoint = $(new Point)
 
@@ -17,25 +18,11 @@ const enum Debug {
   All = 127
 }
 
-export const enum TraverseOp {
-  Item,
-  Enter,
-  Leave
-}
-
 export abstract class Renderable {
   debug = Debug.Redraw
 
-  static *traverse(its: Renderable.It[]): Generator<[op: TraverseOp, it: Renderable.It]> {
-    for (const it of its) {
-      const r = it.renderable
-      if (r.its) {
-        yield [TraverseOp.Enter, it] as any
-        yield* Renderable.traverse(r.its)
-        yield [TraverseOp.Leave, it] as any
-      }
-      yield [TraverseOp.Item, it] as any
-    }
+  static traverse(its: Renderable.It[]) {
+    return traverse('renderable', its as any)
   }
   get its(): Renderable.It[] | undefined { return }
   get flatIts() {

@@ -6,8 +6,9 @@ import { mergeRects } from './clip.ts'
 import { FixedArray } from './fixed-array.ts'
 import { Point } from './point.ts'
 import { Rect } from './rect.ts'
-import { Renderable, TraverseOp } from './renderable.ts'
+import { Renderable } from './renderable.ts'
 import { World } from './world.ts'
+import { TraverseOp } from './traverse.ts'
 
 const enum Debug {
   None = 0,
@@ -122,6 +123,7 @@ class RenderAnimable extends Animable {
       origin,
       visible,
       view,
+      needDirect,
     } = it
     const {
       canvas,
@@ -137,8 +139,12 @@ class RenderAnimable extends Animable {
     visible.x = visible.y = origin.x = origin.y = 0
     // visible.clear(c)
 
-    for (const [op, { renderable: r }] of its) {
+    // let count = 0
+    outer: for (let i = 0, top: [op: TraverseOp, it: Renderable.It]; i < its.length; i++) {
+      top = its[i]
+      const [op, { renderable: r }] = top
       if (op === TraverseOp.Item) {
+        // count++
         if (r.shouldInit || (r.needInit && !r.init)) {
           r.init?.(r.canvas.c)
           r.needInit = false
@@ -146,14 +152,14 @@ class RenderAnimable extends Animable {
           r.didInit = true
         }
 
-        r.opDirect = true //r.needDraw //true
+        r.opDirect = needDirect //true //r.needDraw //true
 
         const o = r.dirtyNext.origin
         o.x = origin.x
         o.y = origin.y
         r.dirtyNext.update()
         // console.log(r.view.text, visible.text)
-        r.isVisible = !r.renders || (!r.isHidden && r.view.intersectsRect(visible))
+        r.isVisible = (!r.isHidden && r.view.intersectsRect(visible))
         if (r.renders && r.isVisible) {
           if (r.didDraw || r.needRender || r.needDraw) {
             // r.clearNext(c)
@@ -179,6 +185,15 @@ class RenderAnimable extends Animable {
         //   continue
         // }
         if (op === TraverseOp.Enter) {
+          if (!r.isVisible) {
+            let top2
+            while (top2 = its[++i]) {
+              const [op2, { renderable: r2 }] = top2
+              if (op2 === TraverseOp.Leave) {
+                if (r === r2) continue outer
+              }
+            }
+          }
           if (r.scroll) {
             origin.x = Math.round(origin.x + r.layout.x + r.scroll.x)
             origin.y = Math.round(origin.y + r.layout.y + r.scroll.y)
@@ -211,6 +226,7 @@ class RenderAnimable extends Animable {
       }
     }
 
+// console.log('render', count)
     if (its.length) this.didDraw = true
 
     if (its.length && its.every(isNotVisibleAndNotDrawing)) {

@@ -7,6 +7,7 @@ import { Point } from './point.ts'
 import { PointerEventType } from './pointer.ts'
 import { Rect } from './rect.ts'
 import { Scene } from './scene.ts'
+import { TraverseOp } from './traverse.ts'
 
 export class Mouse extends Scene {
   constructor(public it: Mouseable.It) { super(it.ctx) }
@@ -73,57 +74,57 @@ export class Mouse extends Scene {
       }
     }
   }
-  *traverseGetItAtPoint(it: Mouseable.It, downIt?: Mouseable.It | null | undefined): Generator<Mouseable.It> {
-    const { renderable: r, mouseable: m } = it
-    const { pointer: { pos }, origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
+  // *traverseGetItAtPoint(it: Mouseable.It, downIt?: Mouseable.It | null | undefined): Generator<Mouseable.It> {
+  //   const { renderable: r, mouseable: m } = it
+  //   const { pointer: { pos }, origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
 
-    origin.add(r.layout)
+  //   origin.add(r.layout)
 
-    // First find the downIt and its scroll, if given,
-    // and yield that before everything else.
-    if (it === downIt) {
-      m.mouse.pos.set(pos).sub(origin)
-      yield downIt
-      yield* this.getItsUnderPointer(this.it)
-      return
-    }
+  //   // First find the downIt and its scroll, if given,
+  //   // and yield that before everything else.
+  //   if (it === downIt) {
+  //     m.mouse.pos.set(pos).sub(origin)
+  //     yield downIt
+  //     yield* this.getItsUnderPointer(this.it)
+  //     return
+  //   }
 
-    if (r.scroll) origin.add(r.scroll)
+  //   if (r.scroll) origin.add(r.scroll)
 
-    if (m.its) for (const curr of m.its) {
-      if (!curr.mouseable.it.renderable.isVisible) {
-        continue
-      }
-      // if (curr.renderable.clipContents) {
-      //   clipArea.setSize(curr.renderable.view.size)
-      // }
-      yield* this.traverseGetItAtPoint(curr, downIt)
-      if (curr.renderable.clipContents) {
-        clipArea.zero()
-      }
-    }
+  //   if (m.its) for (const curr of m.its) {
+  //     if (!curr.mouseable.it.renderable.isVisible) {
+  //       continue
+  //     }
+  //     // if (curr.renderable.clipContents) {
+  //     //   clipArea.setSize(curr.renderable.view.size)
+  //     // }
+  //     yield* this.traverseGetItAtPoint(curr, downIt)
+  //     if (curr.renderable.clipContents) {
+  //       clipArea.zero()
+  //     }
+  //   }
 
-    if (r.scroll) origin.sub(r.scroll)
+  //   if (r.scroll) origin.sub(r.scroll)
 
-    origin.sub(r.layout)
+  //   origin.sub(r.layout)
 
-    let item: Mouseable.It | false | undefined
-    const mousePos = m.mouse.pos.set(pos).sub(origin)
-    if (item = (
-      clipArea.hasSize
-        ? clipArea.isPointWithin(mousePos)
-        && m.getItAtPoint(mousePos)
-        : m.getItAtPoint(mousePos)
-    )) {
-      if (!downIt) yield item
-    }
-  }
-  *getItsUnderPointer(it: Mouseable.It, downIt?: Mouseable.It | null | undefined) {
-    const { origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
-    origin.zero()
-    clipArea.zero()
-    yield* this.traverseGetItAtPoint(it, downIt)
-  }
+  //   let item: Mouseable.It | false | undefined
+  //   const mousePos = m.mouse.pos.set(pos).sub(origin)
+  //   if (item = (
+  //     clipArea.hasSize
+  //       ? clipArea.isPointWithin(mousePos)
+  //       && m.getItAtPoint(mousePos)
+  //       : m.getItAtPoint(mousePos)
+  //   )) {
+  //     if (!downIt) yield item
+  //   }
+  // }
+  // *getItsUnderPointer(it: Mouseable.It, downIt?: Mouseable.It | null | undefined) {
+  //   const { origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
+  //   origin.zero()
+  //   clipArea.zero()
+  //   yield* this.traverseGetItAtPoint(it, downIt)
+  // }
   @fx handle_pointer_event() {
     const { it, ctx, pointer } = of(this)
     const { time, real } = of(pointer)
@@ -170,51 +171,123 @@ export class Mouse extends Scene {
 
     let i = 0
 
-    const its = this.getItsUnderPointer(it, this.downIt)
+    const its = it.mouseable.flatIts // this.getItsUnderPointer(it, this.downIt)
+    // const { origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
+    const { pointer: { pos }, origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
+    origin.zero()
+    clipArea.zero()
 
-    for (const it of its) {
-      const { mouseable: m } = it
+    if (downIt) {
 
-      log('It', it, m.canHover)
+    }
 
-      if (m.canHover) {
-        if (!i++ && this.hoverIt !== it) {
-          this.hoverIt = it
+    for (const [op, mit] of its) {
+      if (op === TraverseOp.Item) {
+        const { mouseable: m } = mit
+
+        let it: Mouseable.It | false | undefined
+        const mousePos = m.mouse.pos.set(pos).sub(origin)
+        it = (
+          clipArea.hasSize
+            ? clipArea.isPointWithin(mousePos)
+            && m.getItAtPoint(mousePos)
+            : m.getItAtPoint(mousePos)
+        )
+        if (!it) continue
+
+        log('It', it, m.canHover)
+
+        if (m.canHover) {
+          if (!i++ && this.hoverIt !== it) {
+            this.hoverIt = it
+          }
         }
-      }
 
-      // switch (kind) {
-      //   case Up:
-      //     if (downIt && it !== downIt) {
-      //       return
-      //     }
-      // }
+        // switch (kind) {
+        //   case Up:
+        //     if (downIt && it !== downIt) {
+        //       return
+        //     }
+        // }
 
-      let handled: boolean | undefined
+        let handled: boolean | undefined
 
-      if (m.onMouseEvent?.(kind)) {
+        if (m.onMouseEvent?.(kind)) {
+          switch (kind) {
+            case Down:
+              if (pointer.button === MouseButton.Left) {
+                this.downIt = it
+              }
+              break
+          }
+          handled = true
+        }
+
         switch (kind) {
-          case Down:
-            if (pointer.button === MouseButton.Left) {
-              this.downIt = it
+          case Up:
+            if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
+              if (pointer.button === MouseButton.Left) {
+                m.onMouseEvent?.(Click)
+                handled = true
+              }
             }
             break
         }
-        handled = true
+
+        if (handled) break
+      }
+      else {
+        const { renderable: r, mouseable: m } = mit
+        if (op === TraverseOp.Enter) {
+
+          if (r.scroll) origin.add(r.scroll)
+          origin.add(r.layout)
+
+        }
+        else if (op === TraverseOp.Leave) {
+
+          if (r.scroll) origin.sub(r.scroll)
+
+          origin.sub(r.layout)
+
+        }
       }
 
-      switch (kind) {
-        case Up:
-          if (time - this.downTime < SINGLE_CLICK_MS && it === downIt) {
-            if (pointer.button === MouseButton.Left) {
-              m.onMouseEvent?.(Click)
-              handled = true
-            }
-          }
-          break
-      }
 
-      if (handled) break
+      // First find the downIt and its scroll, if given,
+      // and yield that before everything else.
+      // if (it === downIt) {
+      //   m.mouse.pos.set(pos).sub(origin)
+      //   yield downIt
+      //   yield * this.getItsUnderPointer(this.it)
+      //   return
+      // }
+
+      // if (m.its) for (const curr of m.its) {
+      //   if (!curr.mouseable.it.renderable.isVisible) {
+      //     continue
+      //   }
+      //   // if (curr.renderable.clipContents) {
+      //   //   clipArea.setSize(curr.renderable.view.size)
+      //   // }
+      //   // yield * this.traverseGetItAtPoint(curr, downIt)
+      //   if (curr.renderable.clipContents) {
+      //     clipArea.zero()
+      //   }
+      // }
+
+      // let item: Mouseable.It | false | undefined
+      // const mousePos = m.mouse.pos.set(pos).sub(origin)
+      // if (item = (
+      //   clipArea.hasSize
+      //     ? clipArea.isPointWithin(mousePos)
+      //     && m.getItAtPoint(mousePos)
+      //     : m.getItAtPoint(mousePos)
+      // )) {
+      //   if (!downIt) yield item
+      // }
+
+
     }
   }
 }

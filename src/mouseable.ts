@@ -4,17 +4,20 @@ import { Mouse } from './mouse.ts'
 import { Point } from './point.ts'
 import { Renderable } from './renderable.ts'
 import { Rect } from './rect.ts'
+import { TraverseOp, traverse } from './traverse.ts'
 
 export abstract class Mouseable {
-  static *traverse(its: Mouseable.It[]): Generator<Mouseable.It> {
-    for (const it of its) {
-      const { mouseable: m } = it
-      if (m.its) yield* Mouseable.traverse(m.its)
-      yield it as any
-    }
+  static traverse(its: Mouseable.It[]) {
+    return traverse('mouseable', its as any)
   }
+  get its(): Mouseable.It[] | undefined { return }
+  get flatIts() {
+    return [...Mouseable.traverse(this.its ?? [])]
+  }
+
   static some(its: Mouseable.It[], predicate: (m: Mouseable.It) => boolean) {
-    for (const m of Mouseable.traverse(its)) {
+    for (const [op,m] of Mouseable.traverse(its)) {
+      if (op !== TraverseOp.Item) continue
       if (predicate(m)) return true
     }
     return false
@@ -32,8 +35,6 @@ export abstract class Mouseable {
   isDown = false
   isFocused = false
   isHovering = false
-
-  get its(): Mouseable.It[] | undefined { return }
 
   getItAtPoint(p: Point): Mouseable.It | false | undefined {
     return this.hitArea?.isPointWithin(p) && this.it
@@ -62,7 +63,7 @@ export abstract class Mouseable {
   }
 
   @fx clamp_pos() {
-    const { it: { ctx: { world: { screen: { rect }}}} } = this
+    const { it: { ctx: { world: { screen: { rect } } } } } = this
     const { pos, clampedPos } = this.mouse
     const { x, y } = pos
     $()

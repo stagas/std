@@ -1,6 +1,6 @@
 // log.active
 import { $, fn, fx } from 'signal'
-import { clamp, maybePush, maybeSplice } from 'utils'
+import { clamp } from 'utils'
 import { Animable } from './animable.ts'
 
 const enum State {
@@ -12,7 +12,7 @@ const enum State {
 }
 
 export class Anim {
-  its: Animable.It[] = []
+  its = new Set<Animable.It>()
   state = State.Idle
   isPaused = false
   speed = 1
@@ -52,42 +52,30 @@ export class Anim {
     return this.state
   }
   @fn add = (it: Animable.It) => {
-    maybePush(this.its, it)
+    this.its.add(it)
     this.updated++
     return this
   }
   @fn remove = (it: Animable.It) => {
-    maybeSplice(this.its, it)
+    this.its.delete(it)
     this.updated++
     return this
   }
-  @fx listen_its() {
-    if (!this.isAnimating && this.active) {
-      $()
-      this.start()
-      return
-    }
-  }
-  get active() {
-    this.updated
-    let pass = 0
-    for (const it of this.flatIts) {
-      // if (it.animable.need) {
-      //   console.log(it.constructor.name)
-      // }
-      pass |= it.animable.need
-    }
-    return pass
-  }
-  get flatIts() {
-    this.updated
-    const its = [...Animable.traverse(this.its ?? [])]
-    // console.log(its)
-    return its
-  }
   @fn removeAll() {
-    this.its = []
+    this.its.clear()
+    this.updated++
     return this
+  }
+  @fx maybe_start() {
+    const { updated, its } = this
+    $()
+    if (its.size) {
+      // console.log('START', [...its].map(it => it.constructor.name))
+      this.start()
+    }
+    else {
+      this.stop()
+    }
   }
   @fn start() {
     if (!this.isAnimating) {
@@ -98,21 +86,21 @@ export class Anim {
     return this
   }
   @fn stop() {
-    cancelAnimationFrame(this.animFrame)
-    this.state = State.Idle
-    this.acc = 0
+    if (this.isAnimating) {
+      this.state = State.Stopping
+    }
     return this
   }
   @fn tick = (ms?: number) => {
     if (this.isPaused) return
 
-    const { state, flatIts: its, step, maxDeltaTime, now: before } = this
+    const { state, its, step, maxDeltaTime, now: before } = this
     let { acc } = this
 
     const now = ms ?? performance.now()
     const dt = now - before
     this.now = now
-    let needNextTick: boolean | undefined = !!this.active
+    let needNextTick: boolean | undefined
 
     if (dt > maxDeltaTime) {
       this.animFrame = requestAnimationFrame(this.tick)
@@ -150,6 +138,7 @@ export class Anim {
 
     const t = clamp(0, 1, (this.acc = acc) / step)
 
+    // TODO: its should add themselves to the queue
     for (const { animable: a } of its) {
       if (a.init) a.need & Animable.Need.Init && a.init()
       else a.need &= ~Animable.Need.Init
@@ -158,18 +147,21 @@ export class Anim {
     }
 
     for (const { animable: a } of its) {
-      if (a.need & Animable.Need.Tick) {
+      if (a.need) {
+        // console.log('NEED', a.it.constructor.name)
         needNextTick = true
         break
       }
     }
 
-    if (needNextTick || this.active) {
+// console.log(State[this.state], needNextTick)
+    if (needNextTick) {
       this.state = State.Animating
       this.animFrame = requestAnimationFrame(this.tick)
     }
     else if (state === State.Stopping) {
-      this.stop()
+      this.state = State.Idle
+      this.acc = 0
     }
     else {
       this.state = State.Stopping
@@ -179,6 +171,6 @@ export class Anim {
   }
 
   // @fx print_isAnimating() {
-  //   console.log('is animating', this.isAnimating)
+  //   console.log('isAnimating', this.isAnimating)
   // }
 }

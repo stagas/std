@@ -1,14 +1,10 @@
 // log.active
-import { $, fn, fx, of } from 'signal'
-import { maybePush, maybeSplice, poolArrayGet, randomHex } from 'utils'
+import { $, fn, of } from 'signal'
+import { maybePush, maybeSplice } from 'utils'
 import { Animable } from './animable.ts'
-import { mergeRects } from './clip.ts'
-import { FixedArray } from './fixed-array.ts'
-import { Point } from './point.ts'
 import { Rect } from './rect.ts'
 import { Renderable } from './renderable.ts'
-import { World } from './world.ts'
-import { TraverseOp } from './traverse.ts'
+import { Scene } from './scene.ts'
 
 const enum Debug {
   None = 0,
@@ -20,31 +16,26 @@ const enum Debug {
   All = 127
 }
 
-export class Render
-  implements Animable.It {
-  constructor(public world: World) { }
-
+export class Render extends Scene
+  implements Renderable.It, Animable.It {
   debug = Debug.None //Overlap
 
+  count = 0
   needDirect = false
   needDirectOne = false
   preferDirect = false
-  wasDirect = false
 
   view = $(new Rect)
-  visible = $(new Rect)
-  origin = { x: 0, y: 0 }
-  visited = new Set<Renderable>()
-  clearing = new Set<Renderable>()
-  clearingRects = $(new FixedArray<Rect>)
-  overlaps = $(new FixedArray<Rect>)
-  painting = new Set<Renderable>()
-  painted = new Set<Renderable>()
-  updating = new Set<Renderable>()
-  drawOver = new Set<Renderable>()
+  get visible() {
+    return $(new Rect(this.view.size))
+  }
 
   its: Renderable.It[] = []
 
+  get shouldDirect() {
+    const { preferDirect, needDirect } = this
+    return preferDirect || needDirect
+  }
   @fn add(it: Renderable.It) {
     maybePush(this.its, it)
     return this
@@ -53,195 +44,58 @@ export class Render
     maybeSplice(this.its, it)
     return this
   }
+  get renderable() {
+    $(); return $(new RenderRenderable(this), { copyRect: true })
+  }
   get animable() {
     $(); return $(new RenderAnimable(this))
   }
 }
 
-class RenderAnimable extends Animable {
-  need = Animable.Need.Init | Animable.Need.Draw
-  constructor(public it: Render) { super(it) }
-  tempRect = $(new Rect)
-  get renderableIts() {
-    const { its } = this.it
-    const rIts = [...its.flatMap(it => it.renderable.flatIts)]
-    $()
-    let index = 0
-    for (const [op, { renderable: r }] of rIts) {
-      if (op !== TraverseOp.Item) continue
-      r.index = index++
-    }
-    return rIts
-  }
-  get debug() {
-    return this.it.debug
-  }
-  @fx trigger_anim_draw() {
-    let pass = false
-    for (const [, { renderable: r }] of this.renderableIts) {
-      if (r.isVisible && r.need) {
-        // console.log(r.need, r.it.constructor.name, r.isVisible)
-        pass = true
-        // break
-      }
-    }
-    $()
-    if (pass) {
-      this.need |= Animable.Need.Draw
-    }
-  }
-  @fx trigger_redraw_on_viewport_resize() {
-    const { w, h } = this.it.world.screen.viewport
-    $()
-    for (const [, it] of this.renderableIts) {
-      if (it.renderable.renders) {
-        it.renderable.needDraw = true
-      }
-    }
-  }
-  @fn init() {
-    const { it } = this
-    const {
-      canvas: { c, rect },
-      screen: { pr },
-      skin: { colors: { bg } }
-    } = of(it.world)
-
-    rect.fillColor = '#000'
-    rect.fill(c)
-    this.need &= ~Animable.Need.Init
-  }
-  @fn tickOne(dt = 1) {
-    const { renderableIts: its } = this
-    for (const [, it] of its) {
-      it.renderable.dt = dt
-    }
-  }
-  draw(t = 1) {
-    const { it, tempRect, renderableIts: its, debug } = this
-    const {
-      origin,
-      visible,
-      view,
-      needDirect,
-    } = it
-    const {
-      canvas,
-      canvas: { c, rect },
-      screen: { pr },
-      skin: { colors: { bg } }
-    } = of(it.world)
-
-    canvas.clear()
-
-    visible.size.set(view.size)
-
-    visible.x = visible.y = origin.x = origin.y = 0
-    // visible.clear(c)
-
-    // let count = 0
-    outer: for (let i = 0, top: [op: TraverseOp, it: Renderable.It]; i < its.length; i++) {
-      top = its[i]
-      const [op, { renderable: r }] = top
-      if (op === TraverseOp.Item) {
-        // count++
-        if (r.shouldInit || (r.needInit && !r.init)) {
-          r.init?.(r.canvas.c)
-          r.needInit = false
-          r.needDraw = true
-          r.didInit = true
-        }
-
-        r.opDirect = needDirect //true //r.needDraw //true
-
-        const o = r.dirtyNext.origin
-        o.x = origin.x
-        o.y = origin.y
-        r.dirtyNext.update()
-        // console.log(r.view.text, visible.text)
-        r.isVisible = (!r.isHidden && r.view.intersectsRect(visible))
-        if (r.renders && r.isVisible) {
-          if (r.didDraw || r.needRender || r.needDraw) {
-            // r.clearNext(c)
-            r.paint(c)
-          }
-        }
-        else {
-          r.needDraw = false
-        }
-      }
-      else {
-        //   if (op === TraverseOp.Enter) {
-        //   if (r.clipContents) {
-        //     c.save()
-        //     r.dirtyNext.view.clip(c)
-        //   }
-        //   continue
-        // }
-        // else if (op === TraverseOp.Leave) {
-        //   if (r.clipContents) {
-        //     c.restore()
-        //   }
-        //   continue
-        // }
-        if (op === TraverseOp.Enter) {
-          if (!r.isVisible) {
-            let top2
-            while (top2 = its[++i]) {
-              const [op2, { renderable: r2 }] = top2
-              if (op2 === TraverseOp.Leave) {
-                if (r === r2) continue outer
-              }
-            }
-          }
-          if (r.scroll) {
-            origin.x = Math.round(origin.x + r.layout.x + r.scroll.x)
-            origin.y = Math.round(origin.y + r.layout.y + r.scroll.y)
-          }
-          else {
-            origin.x = Math.round(origin.x + r.layout.x)
-            origin.y = Math.round(origin.y + r.layout.y)
-          }
-          if (r.clipContents) {
-            c.save()
-            r.dirtyNext.view.clip(c)
-          }
-        }
-        else if (op === TraverseOp.Leave) {
-          if (r.scroll) {
-            origin.x = Math.round(origin.x - r.scroll.x - r.layout.x)
-            origin.y = Math.round(origin.y - r.scroll.y - r.layout.y)
-          }
-          else {
-            origin.x = Math.round(origin.x - r.layout.x)
-            origin.y = Math.round(origin.y - r.layout.y)
-          }
-          if (r.clipContents) {
-            c.restore()
-          }
-        }
-        const p = visible.pos
-        p.x = -origin.x
-        p.y = -origin.y
-      }
-    }
-
-// console.log('render', count)
-    if (its.length) this.didDraw = true
-
-    if (its.length && its.every(isNotVisibleAndNotDrawing)) {
-      this.need &= ~Animable.Need.Draw
-    }
-    // console.log('render')
-    else {
-      //   // else {
-      const itt = its.find(([, it]) => it.renderable.needRender)
-      if (itt) console.log(itt[1].renderable.need, itt[1].constructor.name)
-      // // }
-    }
+class RenderRenderable extends Renderable {
+  constructor(public it: Render) { super(it, false) }
+  get its() {
+    return this.it.its
   }
 }
 
-function isNotVisibleAndNotDrawing([, it]: [op: TraverseOp, it: Renderable.It]) {
-  return !it.renderable.isVisible || !it.renderable.needDraw
+class RenderAnimable extends Animable {
+  constructor(public it: Render) { super(it) }
+  get debug() {
+    return this.it.debug
+  }
+  tickOne(dt = 1) {
+    const { its } = this.it.renderable
+    for (const it of its) {
+      it.renderable.dt = dt
+    }
+  }
+  get itsToPaint() {
+    const its = this.it.renderable.flatIts
+    $()
+    return its.filter(({ renderable: r }) => {
+      r.maybeInit
+      if (!r.canPaint) {
+        return (r.needDraw = false)
+      }
+      return true
+    })
+  }
+  @fn draw(t = 1) {
+    const { it, itsToPaint } = this
+    const { shouldDirect } = it
+    const { canvas } = of(it.ctx.world)
+
+    canvas.clear()
+    let count = 0
+    for (const { renderable: r } of this.itsToPaint) {
+      count++
+      if (r.shouldPaint) {
+        r.paint(canvas!.c, shouldDirect)
+      }
+    }
+
+    if (shouldDirect) return
+    this.need &= ~Animable.Need.Draw
+  }
 }

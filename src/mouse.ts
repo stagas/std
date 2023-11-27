@@ -9,6 +9,8 @@ import { Rect } from './rect.ts'
 import { Scene } from './scene.ts'
 import { TraverseOp } from './traverse.ts'
 
+const mousePos = $(new Point)
+
 export class Mouse extends Scene {
   constructor(public it: Mouseable.It) { super(it.ctx) }
 
@@ -26,14 +28,14 @@ export class Mouse extends Scene {
 
   clipArea = $(new Rect)
 
-  @fx prevent_downIt_invisible() {
-    const { downIt } = when(this)
-    $()
-    return fx(() => {
-      const { isVisible } = whenNot(downIt.renderable)
-      downIt.renderable.isVisible = true
-    })
-  }
+  // @fx prevent_downIt_invisible() {
+  //   const { downIt } = when(this)
+  //   $()
+  //   return fx(() => {
+  //     const { isVisible } = whenNot(downIt.renderable)
+  //     downIt.renderable.isVisible = true
+  //   })
+  // }
   @fx update_it_mouseable_isDown() {
     const { downIt: { mouseable: m } } = when(this)
     $()
@@ -126,16 +128,14 @@ export class Mouse extends Scene {
   //   yield* this.traverseGetItAtPoint(it, downIt)
   // }
   @fx handle_pointer_event() {
-    const { it, ctx, pointer } = of(this)
+    const { it, pointer } = of(this)
     const { time, real } = of(pointer)
     $()
     const { type } = pointer
     const { downIt } = this
 
     const kind = PointerEventMap[type]
-
     log(Mouse.EventKind[kind], pointer.pos.text)
-
     log('downIt', downIt, downIt?.renderable.isVisible)
 
     switch (kind) {
@@ -170,10 +170,7 @@ export class Mouse extends Scene {
     }
 
     let i = 0
-
-    const its = it.mouseable.flatIts // this.getItsUnderPointer(it, this.downIt)
-    // const { origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
-    const { pointer: { pos }, origin, clipArea, ctx: { world: { screen: { rect } } } } = of(this)
+    const { pointer: { pos }, origin, clipArea } = of(this)
     origin.zero()
     clipArea.zero()
 
@@ -181,19 +178,21 @@ export class Mouse extends Scene {
 
     }
 
-    for (const [op, mit] of its) {
+    mousePos.set(pos)
+
+    for (const [op, mit] of it.mouseable.visibleIts) {
       if (op === TraverseOp.Item) {
         const { mouseable: m } = mit
 
-        let it: Mouseable.It | false | undefined
-        const mousePos = m.mouse.pos.set(pos).sub(origin)
-        it = (
+        const it =
           clipArea.hasSize
             ? clipArea.isPointWithin(mousePos)
             && m.getItAtPoint(mousePos)
             : m.getItAtPoint(mousePos)
-        )
+
         if (!it) continue
+
+        m.mouse.pos.set(mousePos)
 
         log('It', it, m.canHover)
 
@@ -237,57 +236,18 @@ export class Mouse extends Scene {
         if (handled) break
       }
       else {
-        const { renderable: r, mouseable: m } = mit
+        const { renderable: r } = mit
         if (op === TraverseOp.Enter) {
-
           if (r.scroll) origin.add(r.scroll)
-          origin.add(r.layout)
-
+          if (r.layout) origin.add(r.layout)
+          mousePos.set(pos).sub(origin)
         }
         else if (op === TraverseOp.Leave) {
-
           if (r.scroll) origin.sub(r.scroll)
-
-          origin.sub(r.layout)
-
+          if (r.layout) origin.sub(r.layout)
+          mousePos.set(pos).sub(origin)
         }
       }
-
-
-      // First find the downIt and its scroll, if given,
-      // and yield that before everything else.
-      // if (it === downIt) {
-      //   m.mouse.pos.set(pos).sub(origin)
-      //   yield downIt
-      //   yield * this.getItsUnderPointer(this.it)
-      //   return
-      // }
-
-      // if (m.its) for (const curr of m.its) {
-      //   if (!curr.mouseable.it.renderable.isVisible) {
-      //     continue
-      //   }
-      //   // if (curr.renderable.clipContents) {
-      //   //   clipArea.setSize(curr.renderable.view.size)
-      //   // }
-      //   // yield * this.traverseGetItAtPoint(curr, downIt)
-      //   if (curr.renderable.clipContents) {
-      //     clipArea.zero()
-      //   }
-      // }
-
-      // let item: Mouseable.It | false | undefined
-      // const mousePos = m.mouse.pos.set(pos).sub(origin)
-      // if (item = (
-      //   clipArea.hasSize
-      //     ? clipArea.isPointWithin(mousePos)
-      //     && m.getItAtPoint(mousePos)
-      //     : m.getItAtPoint(mousePos)
-      // )) {
-      //   if (!downIt) yield item
-      // }
-
-
     }
   }
 }

@@ -16,7 +16,12 @@ export class World {
   skin = $(new Skin)
   anim = $(new Anim)
   screen = $(new Screen)
-  render = $(new Render(this))
+  @nu get render() {
+    const { it } = of(this)
+    const { ctx } = of(it)
+    $()
+    return $(new Render(ctx))
+  }
   canvas?: $<Canvas>
   pointer?: $<Pointer>
   keyboard?: $<Keyboard>

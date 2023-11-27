@@ -1,5 +1,5 @@
 // log.active
-import { $, fx, of, when, whenNot } from 'signal'
+import { $, fx, of, when } from 'signal'
 import { MouseButton } from 'utils'
 import { DOUBLE_CLICK_MS, SINGLE_CLICK_MS } from './constants.ts'
 import { Mouseable } from './mouseable.ts'
@@ -173,22 +173,50 @@ export class Mouse extends Scene {
     const { pointer: { pos }, origin, clipArea } = of(this)
     origin.zero()
     clipArea.zero()
+    mousePos.set(pos)
 
     if (downIt) {
-
+      for (const [op, mit] of it.mouseable.visibleIts) {
+        if (op === TraverseOp.Item) {
+          if (downIt === mit) {
+            const { mouseable: m } = mit
+            m.mouse.pos.set(mousePos)
+            if (m.onMouseEvent?.(kind)) {
+              return
+            }
+            break
+          }
+        }
+        else {
+          const { renderable: r } = mit
+          if (op === TraverseOp.Enter) {
+            if (r.scroll) origin.add(r.scroll)
+            if (r.layout) origin.add(r.layout)
+            mousePos.set(pos).sub(origin)
+          }
+          else if (op === TraverseOp.Leave) {
+            if (r.scroll) origin.sub(r.scroll)
+            if (r.layout) origin.sub(r.layout)
+            mousePos.set(pos).sub(origin)
+          }
+        }
+      }
+      origin.zero()
+      clipArea.zero()
+      mousePos.set(pos)
     }
 
-    mousePos.set(pos)
 
     for (const [op, mit] of it.mouseable.visibleIts) {
       if (op === TraverseOp.Item) {
         const { mouseable: m } = mit
 
         const it =
-          clipArea.hasSize
-            ? clipArea.isPointWithin(mousePos)
-            && m.getItAtPoint(mousePos)
-            : m.getItAtPoint(mousePos)
+          // clipArea.hasSize
+          //   ? clipArea.isPointWithin(mousePos)
+          //   && m.getItAtPoint(mousePos)
+          //   :
+          m.getItAtPoint(mousePos)
 
         if (!it) continue
 

@@ -117,7 +117,10 @@ export abstract class Renderable {
   }
   _dirty = $(new Rect)
   get dirty() {
-    const { view, view: { x, y, w, h }, origin, origin: { x: ox, y: oy } } = this
+    const {
+      view, view: { x, y, w, h },
+      origin, origin: { x: ox, y: oy }
+    } = this
     $()
     return this._dirty
       .set(view)
@@ -138,14 +141,15 @@ export abstract class Renderable {
     return visible
   }
   get isVisible(): boolean {
+    if (this.isHidden) return false
     const { parent } = this
     if (parent) {
       if (!parent.renderable.isVisible) return false
       if (!parent.renderable.scroll) return parent.renderable.isVisible
     }
-    const { it, isHidden, view, view: { x, y, w, h }, origin: { x: ox, y: oy } } = this
+    const { it, view, view: { x, y, w, h }, origin: { x: ox, y: oy } } = this
     const { render } = it.ctx.world
-    if (isHidden || !render) return false
+    if (!render) return false
     $()
     render.visible.pos.setParameters(-ox, -oy)
     const isVisible = view.intersectsRect(render.visible)
@@ -182,20 +186,16 @@ export abstract class Renderable {
     this.didDraw = true
     this.needDraw = false
 
-    if (opDirect) {
-      if (this.canDirectDraw) {
-        c.save()
-        this.didRender = false
-        this.init?.(c)
-        this.draw!(c, tempPoint.set(dirty.pos))
-        c.restore()
-        return dirty
-      }
+    if (opDirect && this.canDirectDraw) {
+      c.save()
+      this.didRender = false
+      this.init?.(c)
+      this.draw!(c, tempPoint.set(dirty.pos))
+      c.restore()
+      return dirty
     }
 
-    if (this.shouldRender) {
-      this.render()
-    }
+    if (this.shouldRender) this.render()
 
     this.paintRendered(c)
     return dirty
@@ -237,8 +237,26 @@ export abstract class Renderable {
     view.size.setParameters(w, h)
   }
 
+  @nu get maybeInit() {
+    const { shouldInit } = this
+    if (!shouldInit) return false
+    $()
+    const r = this
+    r.init?.(r.canvas.c)
+    r.didInit = true
+    r.needInit = false
+    if (r.renders) r.needDraw = true
+    return true
+  }
+
+  // @fx trigger_init_on_first__() {
+  //   const { didRender } = whenNot(this)
+  //   // const { isVisible } = when(this)
+  //   // const { hasSize } = when(this.view)
+  //   $()
+  //   this.needInit = true
+  // }
   @fx trigger_draw_on_dirty_origin() {
-    // const { dirtyNext } = this
     const { origin } = this
     const { x, y } = origin
     $()
@@ -247,26 +265,19 @@ export abstract class Renderable {
       return
     }
   }
+  @fx trigger_draw_on_isVisible() {
+    const { isVisible } = this
+    $()
+    this.needDraw = true
+  }
   @fx trigger_anim_on_scroll() {
-    // const { dirtyNext } = this
     const { worldRender, scroll } = of(this)
     const { x, y } = scroll
     $()
     worldRender.animable.need |= Animable.Need.Draw
-    // if (this.didDraw) {
-    //   this.needDraw = true
-    //   return
-    // }
   }
-  // @fx trigger_init_on_first__() {
-  //   const { didRender } = whenNot(this)
-  //   // const { isVisible } = when(this)
-  //   // const { hasSize } = when(this.view)
-  //   $()
-  //   this.needInit = true
-  // }
   @fx update_rect_on_resize_view__() {
-    // const { renders } = when(this)
+    const { renders } = when(this)
     const { w, h } = this.view
     $()
     this.rect.w = Math.max(this.rect.w, w)
@@ -317,29 +328,11 @@ export abstract class Renderable {
     it?.animable?.flatIts
   }
   @fx trigger_anim_draw__() {
-    const { worldRender, isVisible, needDraw } = of(this)
+    const { worldRender, isVisible, needDraw, needRender } = of(this)
     $()
-    if (isVisible && needDraw) {
+    if (needDraw || needRender) {
       worldRender.animable.need |= Animable.Need.Draw
     }
-  }
-  @nu get maybeInit() {
-    const { shouldInit } = this
-    if (!shouldInit) return false
-    $()
-    const r = this
-    r.init?.(r.canvas.c)
-    r.didInit = true
-    r.needInit = false
-    if (r.renders) r.needDraw = true
-    return true
-  }
-
-  @fx maybeInit_on_isVisible() {
-    const { isVisible } = when(this)
-    $()
-    // if (!this.didRender || !this.didDraw)
-    this.needDraw = true
   }
 }
 

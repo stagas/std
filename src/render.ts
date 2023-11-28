@@ -88,9 +88,10 @@ class RenderAnimable extends Animable {
 
     canvas.clear()
     let count = 0
-    for (const { renderable: r } of this.itsToPaint) {
+    for (const { renderable: r } of itsToPaint) {
       count++
       if (r.shouldPaint) {
+        r.maybeInit
         r.paint(canvas!.c, shouldDirect)
       }
     }

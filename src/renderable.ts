@@ -79,7 +79,6 @@ export abstract class Renderable {
       if (layout) {
         const { x: lx, y: ly } = layout
         $()
-
         this._origin.setParameters(
           Math.round(ox + lx + sx),
           Math.round(oy + ly + sy),
@@ -87,7 +86,6 @@ export abstract class Renderable {
       }
       else {
         $()
-
         this._origin.setParameters(
           Math.round(ox + sx),
           Math.round(oy + sy),
@@ -98,7 +96,6 @@ export abstract class Renderable {
       if (layout) {
         const { x: lx, y: ly } = layout
         $()
-
         this._origin.setParameters(
           ox + lx,
           oy + ly,
@@ -106,7 +103,6 @@ export abstract class Renderable {
       }
       else {
         $()
-
         this._origin.setParameters(
           ox,
           oy,

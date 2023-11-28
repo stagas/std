@@ -73,13 +73,18 @@ class RenderAnimable extends Animable {
   get itsToPaint() {
     const its = this.it.renderable.flatIts
     $()
-    return its.filter(({ renderable: r }) => {
+    const rits = its.filter(({ renderable: r }) => {
       r.maybeInit
       if (!r.canPaint) {
         return (r.needDraw = false)
       }
       return true
     })
+    $.flush()
+    rits.forEach(({ renderable: r }) =>
+      r.maybeInit
+    )
+    return rits
   }
   @fn draw(t = 1) {
     const { it, itsToPaint } = this
@@ -91,7 +96,6 @@ class RenderAnimable extends Animable {
     for (const { renderable: r } of itsToPaint) {
       count++
       if (r.shouldPaint) {
-        r.maybeInit
         r.paint(canvas!.c, shouldDirect)
       }
     }

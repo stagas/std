@@ -28,25 +28,18 @@ export abstract class Renderable {
     return [...(this.visibleIts ?? []).flatMap(it =>
       [it, ...it.renderable.flatIts])]
   }
-
   canDirectDraw?: boolean
-
   clipContents = false
-
-  offset?: $<Point>
-  scroll?: $<Point>
-  layout?: $<Point>
-
-  dt = 1
-  index = -1
-
   copyView?: Rect
   copySize?: Point
   copyRect?: boolean
-
+  offset?: $<Point>
+  scroll?: $<Point>
+  layout?: $<Point>
+  dt = 1
+  index = -1
   public init?(c: CanvasRenderingContext2D): void
   public draw?(c: CanvasRenderingContext2D, point: Point): void
-
   constructor(
     public it: Renderable.It,
     public renders = true,
@@ -55,7 +48,6 @@ export abstract class Renderable {
     public pr = it.ctx.world.screen.$.pr,
     public prRecip = it.ctx.world.screen.$.prRecip,
   ) { }
-
   needInit = false
   needDraw = false
   needRender = false
@@ -64,7 +56,6 @@ export abstract class Renderable {
   didDraw = false
   didRender = false
   isHidden = false
-
   _origin = $(new Point)
   get origin() {
     const { parent } = this
@@ -136,6 +127,13 @@ export abstract class Renderable {
     const { render: { visible } } = of(this.it.ctx.world)
     return visible
   }
+  _isSeen = false
+  get isSeen() {
+    if (this.isVisible) {
+      this._isSeen = true
+    }
+    return this._isSeen
+  }
   get isVisible(): boolean {
     if (this.isHidden) return false
     const { parent } = this
@@ -153,10 +151,11 @@ export abstract class Renderable {
   }
   get shouldInit() {
     const { needInit, init, renders, didDraw, didInit } = this
-    return needInit || Boolean(init && (
-      (renders && !didDraw)
-      || !didInit
-    ))
+    return needInit || Boolean(
+      init && (!renders && !didInit)
+      //   (renders && !didDraw)
+      //   || !didInit
+    )
   }
   get shouldRender() {
     return Boolean(this.renders && this.draw && (!this.didRender || this.needRender))
@@ -232,10 +231,8 @@ export abstract class Renderable {
     $()
     view.size.setParameters(w, h)
   }
-
-  @nu get maybeInit() {
-    const { shouldInit } = this
-    if (!shouldInit) return false
+  @fx maybe_init() {
+    const { shouldInit } = when(this)
     $()
     const r = this
     r.init?.(r.canvas.c)
@@ -276,17 +273,21 @@ export abstract class Renderable {
     const { renders } = when(this)
     const { w, h } = this.view
     $()
+    $.flush()
     this.rect.w = Math.max(this.rect.w, w)
     this.rect.h = Math.max(this.rect.h, h)
     if (this.didRender) this.needRender = true
+    $.flush()
   }
   @fx trigger_init_and_draw_on_resize__() {
     const { renders, pr } = when(this)
     const { w, h } = this.rect
     $()
+    $.flush()
     this.needInit = true
     if (this.didRender) this.needRender = true
     if (this.didDraw) this.needDraw = true
+    $.flush()
   }
   @fx trigger_draw_on_move__() {
     const { renders } = when(this)

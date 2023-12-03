@@ -51,6 +51,9 @@ export class Anim {
   get isAnimating() {
     return this.state
   }
+  has(it: Animable.It) {
+    return this.its.has(it)
+  }
   @fn add = (it: Animable.It) => {
     this.its.add(it)
     this.updated++
@@ -154,7 +157,7 @@ export class Anim {
       }
     }
 
-// console.log(State[this.state], needNextTick)
+    // console.log(State[this.state], needNextTick)
     if (needNextTick) {
       this.state = State.Animating
       this.animFrame = requestAnimationFrame(this.tick)

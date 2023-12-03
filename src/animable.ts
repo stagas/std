@@ -41,9 +41,10 @@ export abstract class Animable {
     // console.log('YEAHH', need, this.it.constructor.name, r?.isVisible, r?.view.text)
     if (need) {
       if (!r || r.isVisible) {
-
-        // console.warn('TRIGGER ADD', it.constructor.name, need)
-        anim.add(it)
+        if (!anim.has(it)) {
+          anim.add(it)
+          this.need |= Animable.Need.Tick
+        }
       }
       else {
         this.need &= ~(Animable.Need.Tick | Animable.Need.Draw)

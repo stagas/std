@@ -273,11 +273,13 @@ export abstract class Renderable {
     const { renders } = when(this)
     const { w, h } = this.view
     $()
-    $.flush()
-    this.rect.w = Math.max(this.rect.w, w)
-    this.rect.h = Math.max(this.rect.h, h)
-    if (this.didRender) this.needRender = true
-    $.flush()
+    $.batch(() => {
+      $.flush()
+      this.rect.w = Math.max(this.rect.w, w)
+      this.rect.h = Math.max(this.rect.h, h)
+      if (this.didRender) this.needRender = true
+      $.flush()
+    })
   }
   @fx trigger_init_and_draw_on_resize__() {
     const { renders, pr } = when(this)

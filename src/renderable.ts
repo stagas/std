@@ -226,19 +226,24 @@ export abstract class Renderable {
     view.size.setParameters(w, h)
   }
   @fx update_from_copyRect() {
-    const { copyRect, view, rect } = when(this)
+    const { copyRect, view, rect } = this
+    if (!copyRect) return
     const { w, h } = rect
     $()
     view.size.setParameters(w, h)
   }
   @fx maybe_init() {
-    const { shouldInit } = when(this)
+    const { shouldInit } = this
+    if (!shouldInit) return
     $()
     const r = this
     r.init?.(r.canvas.c)
     r.didInit = true
     r.needInit = false
-    if (r.renders) r.needDraw = true
+    if (r.renders) {
+      if (!r.canDirectDraw) r.needRender = true
+      r.needDraw = true
+    }
     return true
   }
 
@@ -270,29 +275,30 @@ export abstract class Renderable {
     worldRender.animable.need |= Animable.Need.Draw
   }
   @fx update_rect_on_resize_view__() {
-    const { renders } = when(this)
+    const { renders } = this
+    if (!renders) return
     const { w, h } = this.view
     $()
-    $.batch(() => {
-      $.flush()
-      this.rect.w = Math.max(this.rect.w, w)
-      this.rect.h = Math.max(this.rect.h, h)
-      if (this.didRender) this.needRender = true
-      $.flush()
-    })
+    // $.flush()
+    this.rect.w = Math.max(this.rect.w, w)
+    this.rect.h = Math.max(this.rect.h, h)
+    // if (this.didRender) this.needRender = true
+    // $.flush()
   }
   @fx trigger_init_and_draw_on_resize__() {
-    const { renders, pr } = when(this)
+    const { renders, pr } = this
+    if (!renders) return
     const { w, h } = this.rect
     $()
-    $.flush()
+    // $.flush()
     this.needInit = true
-    if (this.didRender) this.needRender = true
-    if (this.didDraw) this.needDraw = true
-    $.flush()
+    // if (this.didRender) this.needRender = true
+    // if (this.didDraw) this.needDraw = true
+    // $.flush()
   }
   @fx trigger_draw_on_move__() {
-    const { renders } = when(this)
+    const { renders } = this
+    if (!renders) return
     const { x, y } = this.view
     $()
     // console.log('trigger', this.it.constructor.name)

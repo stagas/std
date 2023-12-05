@@ -279,22 +279,19 @@ export abstract class Renderable {
     if (!renders) return
     const { w, h } = this.view
     $()
-    // $.flush()
     this.rect.w = Math.max(this.rect.w, w)
     this.rect.h = Math.max(this.rect.h, h)
-    // if (this.didRender) this.needRender = true
-    // $.flush()
+    if (this.didRender) this.needRender = true
+  }
+  setInitTrue = () => {
+    this.needInit = true
   }
   @fx trigger_init_and_draw_on_resize__() {
     const { renders, pr } = this
     if (!renders) return
     const { w, h } = this.rect
     $()
-    // $.flush()
-    this.needInit = true
-    // if (this.didRender) this.needRender = true
-    // if (this.didDraw) this.needDraw = true
-    // $.flush()
+    $.next(this.setInitTrue)
   }
   @fx trigger_draw_on_move__() {
     const { renders } = this

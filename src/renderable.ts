@@ -135,7 +135,7 @@ export abstract class Renderable {
     return this._isSeen
   }
   get isVisible(): boolean {
-    if (this.isHidden) return false
+    // if (this.isHidden) return false
     const { parent } = this
     if (parent) {
       if (!parent.renderable.isVisible) return false
@@ -165,8 +165,8 @@ export abstract class Renderable {
     return Boolean(isVisible && renders && draw)
   }
   get shouldPaint() {
-    const { didDraw, needRender, needDraw } = this
-    return didDraw || needRender || needDraw
+    const { isHidden, didDraw, needRender, needDraw } = this
+    return !isHidden && (didDraw || needRender || needDraw)
   }
   render() {
     const { rect, canvas } = this
@@ -304,15 +304,15 @@ export abstract class Renderable {
       return
     }
   }
-  // @fx trigger_draw_on_isHidden__() {
-  //   const { renders } = when(this)
-  //   const { isHidden } = this
-  //   $()
-  //   if (this.didDraw) {
-  //     this.needDraw = true
-  //     return
-  //   }
-  // }
+  @fx trigger_draw_on_isHidden__() {
+    const { renders } = when(this)
+    const { isHidden } = this
+    $()
+    if (this.didDraw) {
+      this.needDraw = true
+      return
+    }
+  }
 
   // OPT: get the refs for quicker access
   @nu get worldRender() {

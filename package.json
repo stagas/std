@@ -1,19 +1,19 @@
 {
   "name": "std",
   "version": "1.0.0",
-  "description": "",
+  "description": "std lib for personal projects.",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "test": "utr --bro src/index.ts"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "stagas",
+  "license": "MIT",
   "dependencies": {
     "plenty-themes": "*",
-    "signal": "file:../signal",
-    "utils": "file:../utils"
+    "signal": "github:stagas/signal",
+    "utils": "github:stagas/utils"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "*",

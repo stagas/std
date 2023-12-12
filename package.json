@@ -1,22 +1,20 @@
 {
   "name": "std",
+  "author": "stagas",
   "version": "1.0.0",
   "description": "std lib for personal projects.",
+  "license": "AGPLv3",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "test": "utr --bro src/index.ts"
   },
-  "keywords": [],
-  "author": "stagas",
-  "license": "MIT",
+  "devDependencies": {
+    "ambient-dts": "github:stagas/ambient-dts"
+  },
   "dependencies": {
     "plenty-themes": "*",
     "signal": "github:stagas/signal",
     "utils": "github:stagas/utils"
-  },
-  "devDependencies": {
-    "@total-typescript/ts-reset": "*",
-    "@types/jest": "*"
   }
 }

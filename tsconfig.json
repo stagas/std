@@ -2,6 +2,7 @@
   "include": [
     "ambient.d.ts",
     "src",
+    "develop",
     "examples"
   ],
   "compilerOptions": {
@@ -26,14 +27,19 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "noErrorTruncation": true,
+    "noImplicitThis": true,
+    // "noUncheckedIndexedAccess": true,
+    // "isolatedModules": true,
+    // "inlineSources": true,
+    // "declaration": true,
+    // "noUnusedLocals": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "allowJs": true,
     "strict": true,
-    // "noImplicitThis": true,
-    // "noUncheckedIndexedAccess": true,
-    // "isolatedModules": true,
-    // "noUnusedLocals": true,
+    "types": [
+      "ambient-dts"
+    ]
   }
 }

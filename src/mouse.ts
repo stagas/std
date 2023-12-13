@@ -63,7 +63,9 @@ export class Mouse extends Scene {
     }
   }
   @fx update_it_mouseable_isHovering() {
-    const { hoverIt: { mouseable: m } } = when(this)
+    const { hoverIt } = when(this)
+    const { mouseable: m } = hoverIt
+    if (this.downIt && hoverIt !== this.downIt) return
     $()
     if (m.canHover) {
       const { ctx: { world } } = of(this)
@@ -154,8 +156,9 @@ export class Mouse extends Scene {
               break
 
             case Up:
-              this.hoverIt
-                = this.downIt
+              // this.hoverIt
+              //   =
+              this.downIt
                 = null
               break
           }
@@ -163,9 +166,9 @@ export class Mouse extends Scene {
         break
 
       case Leave:
-        if (!downIt) {
+        // if (!downIt) {
           this.hoverIt = null
-        }
+        // }
         return
     }
 
@@ -175,7 +178,7 @@ export class Mouse extends Scene {
     clipArea.zero()
     mousePos.set(pos)
 
-    if (downIt) {
+    if (this.downIt) {
       for (const [op, mit] of it.mouseable.visibleIts) {
         if (op === TraverseOp.Item) {
           if (downIt === mit) {
@@ -206,7 +209,6 @@ export class Mouse extends Scene {
       mousePos.set(pos)
     }
 
-
     for (const [op, mit] of it.mouseable.visibleIts) {
       if (op === TraverseOp.Item) {
         const { mouseable: m } = mit
@@ -229,6 +231,8 @@ export class Mouse extends Scene {
             this.hoverIt = it
           }
         }
+
+        if (this.downIt) continue
 
         // switch (kind) {
         //   case Up:

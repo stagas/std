@@ -151,7 +151,7 @@ export class Anim {
 
     for (const { animable: a } of its) {
       if (a.need) {
-        // console.log('NEED', a.it.constructor.name)
+        // console.log('NEED', a.it.constructor.name, a.need)
         needNextTick = true
         break
       }

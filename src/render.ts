@@ -69,6 +69,7 @@ class RenderAnimable extends Animable {
     for (const it of its) {
       it.renderable.dt = dt
     }
+    this.need &= ~Animable.Need.Tick
   }
   get itsToPaint() {
     const its = this.it.renderable.flatIts

@@ -6,6 +6,6 @@ export class Skin {
   fonts = {
     sans: "'Helvetica Neue', 'Segoe UI', 'Roboto', 'Arial', sans-serif",
     cond: "'Ubuntu Condensed', 'Roboto Condensed', 'Helvetica Neue', Arial, sans-serif",
-    mono: "'Roboto Mono', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace"
+    mono: "'Noto Sans Mono', 'Roboto Mono', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace"
   }
 }

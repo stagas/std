@@ -341,9 +341,20 @@ export class Rect extends Shape {
     c.rect(x, y, w, h)
     return this
   }
+  pathExact(c: CanvasRenderingContext2D) {
+    const { x, y, w, h } = this
+    c.rect(Math.ceil(x), Math.ceil(y), Math.floor(w - .5), Math.floor(h - .5))
+    return this
+  }
   clip(c: CanvasRenderingContext2D) {
     c.beginPath()
     this.path(c)
+    c.clip()
+    return this
+  }
+  clipExact(c: CanvasRenderingContext2D) {
+    c.beginPath()
+    this.pathExact(c)
     c.clip()
     return this
   }

@@ -1,5 +1,5 @@
 import { fn, fx } from 'signal'
-import { PointLike } from './point'
+import { PointLike } from './point.ts'
 
 export interface MatrixLike {
   a: number

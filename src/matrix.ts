@@ -1,5 +1,6 @@
 import { fn, fx } from 'signal'
 import { PointLike } from './point.ts'
+import { clamp } from 'utils'
 
 export interface MatrixLike {
   a: number
@@ -45,8 +46,9 @@ export class Matrix {
   @fn scaleDeltaAtPoint(
     delta: number,
     { x, y }: PointLike,
-    minScale: number = 0.1): Matrix {
-    const { m, a, sync } = this
+    min: number = 0.1,
+    max: number = 300): Matrix {
+    const { m, a } = this
 
     const d = (a + (delta * a)) / a
 
@@ -55,11 +57,11 @@ export class Matrix {
 
     m.a
       = m.d
-      = Math.max(minScale, m.a)
+      = clamp(min, max, m.a)
 
     m.translateSelf(-x, -y)
 
-    sync()
+    this.sync()
 
     return this
   }
@@ -67,12 +69,12 @@ export class Matrix {
     from: PointLike,
     to: PointLike,
     pr: number = 1): Matrix {
-    const { m, a, d, syncTranslate } = this
+    const { m, a, d } = this
     m.translateSelf(
       pr * (to.x - from.x) / a,
       pr * (to.y - from.y) / d
     )
-    syncTranslate()
+    this.syncTranslate()
     return this
   }
 }

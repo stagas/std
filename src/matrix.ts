@@ -1,4 +1,4 @@
-import { fn, fx } from 'signal'
+import { alias, fn, fx } from 'signal'
 import { PointLike } from './point.ts'
 import { clamp } from 'utils'
 
@@ -20,6 +20,9 @@ export class Matrix {
   d: number = 1
   e: number = 0
   f: number = 0
+
+  tx = alias(this, 'e')
+  ty = alias(this, 'f')
 
   @fn sync() {
     const { m } = this

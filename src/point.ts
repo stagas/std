@@ -62,6 +62,10 @@ export class Point extends Shape {
     return $(new Point, { x, y })
   }
 
+  get aspect() {
+    return this.x / this.y
+  }
+
   get styleTransformTranslate() {
     const { x, y } = this
     return `translate(${x}px,${y}px)`

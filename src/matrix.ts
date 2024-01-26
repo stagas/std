@@ -24,6 +24,24 @@ export class Matrix {
   tx = alias(this, 'e')
   ty = alias(this, 'f')
 
+  _values?: [
+    sx: number, cy: number, number,
+    cx: number, sy: number, number,
+    tx: number, ty: number, number
+  ]
+  get values() {
+    const { a, b, c, d, e, f } = this
+    const o = (this._values ??= [
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 1
+    ])
+    o[0] = a
+    o[4] = d
+    o[6] = e
+    o[7] = f
+    return this._values
+  }
   @fn sync() {
     const { m } = this
     this.a = m.a

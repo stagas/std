@@ -546,6 +546,10 @@ export class Rect extends Shape {
     )
     return this
   }
+  viewport(gl: WebGL2RenderingContext) {
+    const { x_pr, y_pr, w_pr, h_pr } = this
+    gl.viewport(x_pr, y_pr, w_pr, h_pr)
+  }
   @fn resizeToWindow() {
     this.w = window.innerWidth
     this.h = window.innerHeight

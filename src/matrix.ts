@@ -24,14 +24,14 @@ export class Matrix {
   tx = alias(this, 'e')
   ty = alias(this, 'f')
 
-  _values?: [
+  _valuesGL?: [
     sx: number, cy: number, number,
     cx: number, sy: number, number,
     tx: number, ty: number, number
   ]
-  get values() {
+  get valuesGL() {
     const { a, b, c, d, e, f } = this
-    const o = (this._values ??= [
+    const o = (this._valuesGL ??= [
       0, 0, 0,
       0, 0, 0,
       0, 0, 1
@@ -40,6 +40,25 @@ export class Matrix {
     o[4] = d
     o[6] = e
     o[7] = f
+    return this._valuesGL
+  }
+  _values?: [
+    sx: number, cy: number,
+    cx: number, sy: number,
+    tx: number, ty: number,
+  ]
+  get values() {
+    const { a, b, c, d, e, f } = this
+    const o = (this._values ??= [
+      1, 0, 0,
+      1, 0, 0,
+    ])
+    o[0] = a
+    o[1] = b
+    o[2] = c
+    o[3] = d
+    o[4] = e
+    o[5] = f
     return this._values
   }
   @fn sync() {

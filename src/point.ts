@@ -143,9 +143,12 @@ export class Point extends Shape {
     }
     return this
   }
-  @fn setFromEvent(o: { pageX: number, pageY: number }) {
-    this.x = o.pageX
-    this.y = o.pageY
+  @fn setFromEvent(
+    o: { pageX: number, pageY: number },
+    relativeTo?: { offsetLeft: number, offsetTop: number }
+  ) {
+    this.x = o.pageX - (relativeTo?.offsetLeft ?? 0)
+    this.y = o.pageY - (relativeTo?.offsetTop ?? 0)
     return this
   }
   add(o: PointLike | number) {

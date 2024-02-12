@@ -1,6 +1,7 @@
 import { alias, fn, fx } from 'signal'
 import { PointLike } from './point.ts'
 import { clamp } from 'utils'
+import { Shape } from './shape.ts'
 
 export interface MatrixLike {
   a: number
@@ -12,6 +13,7 @@ export interface MatrixLike {
 }
 
 export class Matrix {
+  pr = 1
   m: DOMMatrix = new DOMMatrix()
 
   a: number = 1
@@ -30,7 +32,7 @@ export class Matrix {
     tx: number, ty: number, number
   ]
   get valuesGL() {
-    const { a, b, c, d, e, f } = this
+    const { a, b, c, d, e, f, pr } = this
     const o = (this._valuesGL ??= [
       0, 0, 0,
       0, 0, 0,
@@ -48,7 +50,7 @@ export class Matrix {
     tx: number, ty: number,
   ]
   get values() {
-    const { a, b, c, d, e, f } = this
+    const { a, b, c, d, e, f, pr } = this
     const o = (this._values ??= [
       1, 0, 0,
       1, 0, 0,

@@ -26,6 +26,21 @@ export class Matrix {
   tx = alias(this, 'e')
   ty = alias(this, 'f')
 
+  @fn set(m: Matrix | DOMMatrix) {
+    this.a = m.a
+    this.b = m.b
+    this.c = m.c
+    this.d = m.d
+    this.e = m.e
+    this.f = m.f
+    this.m.a = this.a
+    this.m.b = this.b
+    this.m.c = this.c
+    this.m.d = this.d
+    this.m.e = this.e
+    this.m.f = this.f
+  }
+
   _valuesGL?: [
     sx: number, cy: number, number,
     cx: number, sy: number, number,
@@ -65,12 +80,7 @@ export class Matrix {
   }
   @fn sync() {
     const { m } = this
-    this.a = m.a
-    this.b = m.b
-    this.c = m.c
-    this.d = m.d
-    this.e = m.e
-    this.f = m.f
+    this.set(m)
   }
   @fn syncTranslate() {
     const { m } = this

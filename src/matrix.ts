@@ -115,8 +115,8 @@ export namespace Matrix {
   export const viewBox = fn(function viewBox<T extends MatrixLike>(m: T, view: RectLike, box: RectLike) {
     m.a = view.w / box.w
     m.d = view.h / box.h
-    m.e = -box.x * m.a
-    m.f = -box.y * m.d
+    m.e = -box.x * m.a + view.x
+    m.f = -box.y * m.d + view.y
     return m
   })
 }

@@ -92,8 +92,8 @@ export namespace Matrix {
       && Math.abs(m0.b - m1.b) < threshold
       && Math.abs(m0.c - m1.c) < threshold
       && Math.abs(m0.d - m1.d) < threshold
-      && Math.abs(m0.e - m1.e) < threshold
-      && Math.abs(m0.f - m1.f) < threshold
+      && Math.abs(m0.e / m0.a - m1.e / m1.a) < threshold
+      && Math.abs(m0.f / m0.d - m1.f / m1.d) < threshold
     ) {
       return true
     }

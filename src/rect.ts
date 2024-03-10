@@ -242,6 +242,36 @@ export class Rect extends Shape {
     const { x, y, w, h } = this
     return $(new Rect, { x, y, w, h })
   }
+  @fn mul(o: RectLike | number) {
+    if (typeof o === 'number') {
+      this.x *= o
+      this.y *= o
+      this.w *= o
+      this.h *= o
+    }
+    else {
+      this.x *= o.x
+      this.y *= o.y
+      this.w *= o.w
+      this.h *= o.h
+    }
+    return this
+  }
+  @fn div(o: RectLike | number) {
+    if (typeof o === 'number') {
+      this.x /= o
+      this.y /= o
+      this.w /= o
+      this.h /= o
+    }
+    else {
+      this.x /= o.x
+      this.y /= o.y
+      this.w /= o.w
+      this.h /= o.h
+    }
+    return this
+  }
   @fn scale(factor: number) {
     this.x *= factor
     this.y *= factor

@@ -145,10 +145,10 @@ export class Point extends Shape {
   }
   @fn setFromEvent(
     o: { pageX: number, pageY: number },
-    relativeTo?: { offsetLeft: number, offsetTop: number }
+    relativeTo?: { x?: number, y?: number, offsetLeft?: number, offsetTop?: number }
   ) {
-    this.x = o.pageX - (relativeTo?.offsetLeft ?? 0)
-    this.y = o.pageY - (relativeTo?.offsetTop ?? 0)
+    this.x = o.pageX - (relativeTo?.offsetLeft ?? 0) - (relativeTo?.x ?? 0)
+    this.y = o.pageY - (relativeTo?.offsetTop ?? 0) //- (relativeTo?.y ?? 0)
     return this
   }
   add(o: PointLike | number) {
@@ -332,7 +332,8 @@ export class Point extends Shape {
     const det = a * d - b * c
 
     if (det === 0) {
-      throw new Error("Matrix is not invertible.")
+      // throw new Error("Matrix is not invertible.")
+      return this
     }
 
     const idet = 1 / det
